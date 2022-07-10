@@ -3,33 +3,31 @@ package com.project.CmsApplication.controller;
 import com.project.CmsApplication.Services.CmsServices;
 import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.model.BaseResponse;
-import com.project.CmsApplication.model.UserRole;
-import com.project.CmsApplication.repository.UserRoleRepository;
+import com.project.CmsApplication.model.Users;
+import com.project.CmsApplication.repository.UsersRepository;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 @RestController
-@RequestMapping("userRole")
-public class UserRoleController {
+@RequestMapping("Users")
+public class UsersController {
     DateFormatter dateFormatter;
 
     @Autowired
-    UserRoleRepository userRoleRepository;
+    UsersRepository UsersRepository;
     @Autowired
     CmsServices cmsServices;
 
-    @GetMapping("/getUserRole")
-    public BaseResponse<List<UserRole>> getAllUserRole() throws Exception {
+    @GetMapping("/getUsers")
+    public BaseResponse<List<Users>> getAllUsers() throws Exception {
         BaseResponse baseResponse = new BaseResponse();
         try {
-            baseResponse.setData(userRoleRepository.findAll());
+            baseResponse.setData(UsersRepository.findAll());
             baseResponse.setStatus("2000");
             baseResponse.setSuccess(true);
             baseResponse.setMessage("Company successfully Added");
@@ -41,22 +39,22 @@ public class UserRoleController {
         return baseResponse;
     }
 
-    @PostMapping("/getUserRoleDynamic")
-    public BaseResponse<List<UserRole>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
-        return cmsServices.getUserRole(input);
+    @PostMapping("/getUsersDynamic")
+    public BaseResponse<List<Users>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
+        return cmsServices.getUsers(input);
     }
 
-    @PostMapping("/addNewUserRole")
-    public BaseResponse<String> addNewUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
-        return cmsServices.addNewUserRole(input);
+    @PostMapping("/addNewUsers")
+    public BaseResponse<String> addNewUsers(@RequestBody String input) throws Exception, SQLException, ParseException {
+        return cmsServices.addNewUsers(input);
     }
 
-    @PostMapping("/getUserRoleById")
-    public BaseResponse<List<UserRole>> getUserRoleById(@RequestBody String input) throws Exception, SQLException, ParseException {
+    @PostMapping("/getUsersById")
+    public BaseResponse<List<Users>> getUsersById(@RequestBody String input) throws Exception, SQLException, ParseException {
         BaseResponse baseResponse = new BaseResponse();
         try {
             JSONObject jsonInput = new JSONObject(input);
-            baseResponse.setData(userRoleRepository.getUserRoleById(jsonInput.optInt("user_role_id")));
+            baseResponse.setData(UsersRepository.getUsersById(jsonInput.optInt("user_role_id")));
             baseResponse.setStatus("2000");
             baseResponse.setSuccess(true);
             baseResponse.setMessage("User Role get By Id");
@@ -68,12 +66,12 @@ public class UserRoleController {
         return baseResponse;
     }
 
-    @PostMapping("/getUserRoleByName")
-    public BaseResponse<List<UserRole>> getUserRoleByName(@RequestBody String input) throws Exception, SQLException, ParseException {
+    @PostMapping("/getUsersByName")
+    public BaseResponse<List<Users>> getUsersByName(@RequestBody String input) throws Exception, SQLException, ParseException {
         BaseResponse baseResponse = new BaseResponse();
         try {
             JSONObject jsonInput = new JSONObject(input);
-            baseResponse.setData(userRoleRepository.getUserRoleByName("%" + jsonInput.optString("user_role_name") + "%"));
+            baseResponse.setData(UsersRepository.getUsersByName("%" + jsonInput.optString("user_role_name") + "%"));
             baseResponse.setStatus("2000");
             baseResponse.setSuccess(true);
             baseResponse.setMessage("User Role get By Id");
