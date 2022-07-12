@@ -8,36 +8,22 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "users", schema = "cms")
-public class Users {
+@Table(name = "Role", schema = "cms")
+public class Role {
 
     @Id
-    @Column(name = "user_id", columnDefinition = "serial")
+    @Column(name = "role_id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public int user_id;
+    public int role_id;
 
     @NotNull
-    @Column(name = "user_name")
-    public String user_name;
+    @Column(name = "role_name")
+    public String role_name;
 
-    @NotNull
-    @Column(name = "user_password")
-    public String user_password;
-    @NotNull
-    @Column(name = "user_email")
-    public String user_email;
 
     @NotNull
     @Column(name = "status")
     public String status;
-
-    @NotNull
-    @Column(name = "user_full_name")
-    public String user_full_name;
-
-    @NotNull
-    @Column(name = "user_token")
-    public String user_token;
 
     @NotNull
     @Column(name = "created_by")
@@ -57,36 +43,20 @@ public class Users {
     @Column(name = "updated_date")
     public Date updated_date;
 
-    public int getUser_id() {
-        return user_id;
+    public int getRole_id() {
+        return role_id;
     }
 
-    public void setUser_id(int user_id) {
-        this.user_id = user_id;
+    public void setRole_id(int role_id) {
+        this.role_id = role_id;
     }
 
-    public String getUser_name() {
-        return user_name;
+    public String getRole_name() {
+        return role_name;
     }
 
-    public void setUser_name(String user_name) {
-        this.user_name = user_name;
-    }
-
-    public String getUser_password() {
-        return user_password;
-    }
-
-    public void setUser_password(String user_password) {
-        this.user_password = user_password;
-    }
-
-    public String getUser_email() {
-        return user_email;
-    }
-
-    public void setUser_email(String user_email) {
-        this.user_email = user_email;
+    public void setRole_name(String role_name) {
+        this.role_name = role_name;
     }
 
     public String getStatus() {
@@ -95,22 +65,6 @@ public class Users {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getUser_full_name() {
-        return user_full_name;
-    }
-
-    public void setUser_full_name(String user_full_name) {
-        this.user_full_name = user_full_name;
-    }
-
-    public String getUser_token() {
-        return user_token;
-    }
-
-    public void setUser_token(String user_token) {
-        this.user_token = user_token;
     }
 
     public String getCreated_by() {
@@ -144,5 +98,4 @@ public class Users {
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
     }
-
 }

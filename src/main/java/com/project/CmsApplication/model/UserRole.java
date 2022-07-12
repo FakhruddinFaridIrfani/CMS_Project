@@ -17,12 +17,16 @@ public class UserRole {
     public int user_role_id;
 
     @NotNull
-    @Column(name = "user_role_name")
-    public String user_role_name;
+    @Column(name = "user_id")
+    public int user_id;
 
     @NotNull
-    @Column(name = "user_role_desc")
-    public String user_role_desc;
+    @Column(name = "role_id")
+    public int role_id;
+
+    @NotNull
+    @Column(name = "status")
+    public String status;
 
     @NotNull
     @Column(name = "created_by")
@@ -50,20 +54,28 @@ public class UserRole {
         this.user_role_id = user_role_id;
     }
 
-    public String getUser_role_name() {
-        return user_role_name;
+    public int getUser_id() {
+        return user_id;
     }
 
-    public void setUser_role_name(String user_role_name) {
-        this.user_role_name = user_role_name;
+    public void setUser_id(int user_id) {
+        this.user_id = user_id;
     }
 
-    public String getUser_role_desc() {
-        return user_role_desc;
+    public int getRole_id() {
+        return role_id;
     }
 
-    public void setUser_role_desc(String user_role_desc) {
-        this.user_role_desc = user_role_desc;
+    public void setRole_id(int role_id) {
+        this.role_id = role_id;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getCreated_by() {

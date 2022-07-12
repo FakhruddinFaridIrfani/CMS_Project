@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("Users")
@@ -20,26 +21,27 @@ public class UsersController {
 
     @Autowired
     UsersRepository UsersRepository;
+
     @Autowired
     CmsServices cmsServices;
 
-    @GetMapping("/getUsers")
-    public BaseResponse<List<Users>> getAllUsers() throws Exception {
-        BaseResponse baseResponse = new BaseResponse();
-        try {
-            baseResponse.setData(UsersRepository.findAll());
-            baseResponse.setStatus("2000");
-            baseResponse.setSuccess(true);
-            baseResponse.setMessage("Company successfully Added");
-        } catch (Exception e) {
-            baseResponse.setStatus("0");
-            baseResponse.setSuccess(false);
-            baseResponse.setMessage(e.getMessage());
-        }
-        return baseResponse;
-    }
+//    @GetMapping("/getUsers")
+//    public BaseResponse<List<Users>> getAllUsers() throws Exception {
+//        BaseResponse baseResponse = new BaseResponse();
+//        try {
+//            baseResponse.setData(UsersRepository.findAll());
+//            baseResponse.setStatus("2000");
+//            baseResponse.setSuccess(true);
+//            baseResponse.setMessage("Company successfully Added");
+//        } catch (Exception e) {
+//            baseResponse.setStatus("0");
+//            baseResponse.setSuccess(false);
+//            baseResponse.setMessage(e.getMessage());
+//        }
+//        return baseResponse;
+//    }
 
-    @PostMapping("/getUsersDynamic")
+    @PostMapping("/getUsers")
     public BaseResponse<List<Users>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
         return cmsServices.getUsers(input);
     }
@@ -54,7 +56,7 @@ public class UsersController {
         BaseResponse baseResponse = new BaseResponse();
         try {
             JSONObject jsonInput = new JSONObject(input);
-            baseResponse.setData(UsersRepository.getUsersById(jsonInput.optInt("user_role_id")));
+            baseResponse.setData(UsersRepository.getUsersById(jsonInput.optInt("user_id")));
             baseResponse.setStatus("2000");
             baseResponse.setSuccess(true);
             baseResponse.setMessage("User Role get By Id");
@@ -71,7 +73,7 @@ public class UsersController {
         BaseResponse baseResponse = new BaseResponse();
         try {
             JSONObject jsonInput = new JSONObject(input);
-            baseResponse.setData(UsersRepository.getUsersByName("%" + jsonInput.optString("user_role_name") + "%"));
+            baseResponse.setData(UsersRepository.getUsersByName("%" + jsonInput.optString("user_full_name") + "%"));
             baseResponse.setStatus("2000");
             baseResponse.setSuccess(true);
             baseResponse.setMessage("User Role get By Id");
@@ -81,5 +83,20 @@ public class UsersController {
             baseResponse.setMessage(e.getMessage());
         }
         return baseResponse;
+    }
+
+    @PostMapping("/updateUsers")
+    public BaseResponse<Users> updateUsers(@RequestBody String input) throws Exception, SQLException, ParseException {
+        return cmsServices.updateUsers(input);
+    }
+
+    @PostMapping("/deleteUsers")
+    public BaseResponse<Users> deleteUsersById(@RequestBody String input) throws Exception, SQLException, ParseException {
+        return cmsServices.deleteUsers(input);
+    }
+
+    @PostMapping("/loginUsers")
+    public BaseResponse<Map<String,Object>> loginUser(@RequestBody String input) throws Exception, SQLException, ParseException {
+        return cmsServices.loginUser(input);
     }
 }

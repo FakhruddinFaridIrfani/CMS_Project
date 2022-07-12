@@ -25,24 +25,24 @@ public class UserRoleController {
     @Autowired
     CmsServices cmsServices;
 
-    @GetMapping("/getUserRole")
-    public BaseResponse<List<UserRole>> getAllUserRole() throws Exception {
-        BaseResponse baseResponse = new BaseResponse();
-        try {
-            baseResponse.setData(userRoleRepository.findAll());
-            baseResponse.setStatus("2000");
-            baseResponse.setSuccess(true);
-            baseResponse.setMessage("Company successfully Added");
-        } catch (Exception e) {
-            baseResponse.setStatus("0");
-            baseResponse.setSuccess(false);
-            baseResponse.setMessage(e.getMessage());
-        }
-        return baseResponse;
-    }
+//    @GetMapping("/getUserRole")
+//    public BaseResponse<List<UserRole>> getAllUserRole() throws Exception {
+//        BaseResponse baseResponse = new BaseResponse();
+//        try {
+//            baseResponse.setData(userRoleRepository.findAll());
+//            baseResponse.setStatus("2000");
+//            baseResponse.setSuccess(true);
+//            baseResponse.setMessage("Company successfully Added");
+//        } catch (Exception e) {
+//            baseResponse.setStatus("0");
+//            baseResponse.setSuccess(false);
+//            baseResponse.setMessage(e.getMessage());
+//        }
+//        return baseResponse;
+//    }
 
-    @PostMapping("/getUserRoleDynamic")
-    public BaseResponse<List<UserRole>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
+    @PostMapping("/getUserRole")
+    public BaseResponse<List<UserRole>> getUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
         return cmsServices.getUserRole(input);
     }
 
@@ -51,22 +51,22 @@ public class UserRoleController {
         return cmsServices.addNewUserRole(input);
     }
 
-    @PostMapping("/getUserRoleById")
-    public BaseResponse<List<UserRole>> getUserRoleById(@RequestBody String input) throws Exception, SQLException, ParseException {
-        BaseResponse baseResponse = new BaseResponse();
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            baseResponse.setData(userRoleRepository.getUserRoleById(jsonInput.optInt("user_role_id")));
-            baseResponse.setStatus("2000");
-            baseResponse.setSuccess(true);
-            baseResponse.setMessage("User Role get By Id");
-        } catch (Exception e) {
-            baseResponse.setStatus("0");
-            baseResponse.setSuccess(false);
-            baseResponse.setMessage(e.getMessage());
-        }
-        return baseResponse;
-    }
+//    @PostMapping("/getUserRoleByUserId")
+//    public BaseResponse<List<UserRole>> getUserRoleById(@RequestBody String input) throws Exception, SQLException, ParseException {
+//        BaseResponse baseResponse = new BaseResponse();
+//        try {
+//            JSONObject jsonInput = new JSONObject(input);
+//            baseResponse.setData(userRoleRepository.getUserRoleByUserId(jsonInput.optInt("user_id")));
+//            baseResponse.setStatus("2000");
+//            baseResponse.setSuccess(true);
+//            baseResponse.setMessage("User Role get By Id");
+//        } catch (Exception e) {
+//            baseResponse.setStatus("0");
+//            baseResponse.setSuccess(false);
+//            baseResponse.setMessage(e.getMessage());
+//        }
+//        return baseResponse;
+//    }
 
     @PostMapping("/getUserRoleByName")
     public BaseResponse<List<UserRole>> getUserRoleByName(@RequestBody String input) throws Exception, SQLException, ParseException {

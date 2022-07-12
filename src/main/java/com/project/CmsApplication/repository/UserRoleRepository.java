@@ -14,29 +14,35 @@ import java.util.List;
 @Transactional
 public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
 
-    @Query(value = "SELECT * FROM cms.user_role WHERE " +
-            "user_role_name like :user_role_name " +
-            "AND user_role_desc like :user_role_desc " +
-            "AND created_by like :created_by " +
-            "AND  CAST(created_date AS VARCHAR) like :created_date " +
-            "AND updated_by like :updated_by " +
-            "AND CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
-    List<UserRole> getUserRoleList(@Param("user_role_name") String user_role_name,
-                                   @Param("user_role_desc") String desc, @Param("created_by") String created_by,
-                                   @Param("created_date") String created_at, @Param("updated_by") String updated_by,
-                                   @Param("updated_date") String updated_at);
+    @Query(value = "SELECT * FROM cms.user_role" +
+            "WHERE " +
+            "CAST(ur.user_id AS VARCHAR) like :user_id " +
+            "AND CAST(ur.role_id AS VARCHAR) like :role_id " +
+            "AND ur.status like :status" +
+            "AND ur.created_by like :created_by " +
+            "AND CAST(ur.created_date AS VARCHAR) like :created_date " +
+            "AND ur.updated_by like :updated_by " +
+            "AND CAST(ur.updated_date AS VARCHAR) like :updated_date", nativeQuery = true)
+    List<UserRole> getUserRoleList(@Param("user_id") String user_id,
+                                   @Param("role_id") String role_id,
+                                   @Param("status") String status,
+                                   @Param("created_by") String created_by,
+                                   @Param("created_date") String created_date,
+                                   @Param("updated_by") String updated_by,
+                                   @Param("updated_date") String updated_date);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.user_role(user_role_name,user_role_desc,created_by,created_date,updated_by,updated_date) " +
-            "VALUES(:role_name,:role_desc,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("role_name") String role_name, @Param("role_desc") String role_desc, @Param("created_by") String created_by);
+    @Query(value = "INSERT INTO cms.user_role(user_id,role_id,status,created_by,created_date,updated_by,updated_date) " +
+            "VALUES(:user_id,:role_id,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+    void save(@Param("user_id") String user_id, @Param("role_id") String role_desc, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.user_role WHERE user_role_id =:user_role_id", nativeQuery = true)
-    List<UserRole> getUserRoleById(@Param("user_role_id") int user_role_id);
+    @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status ='active'", nativeQuery = true)
+    List<UserRole> getUserRoleByUserId(@Param("user_id") int user_id);
 
     @Query(value = "SELECT * FROM cms.user_role WHERE user_role_name like :user_role_name", nativeQuery = true)
     List<UserRole> getUserRoleByName(@Param("user_role_name") String user_role_name);
 
-    @Query(value = "UPDATE cms.user_role SET user_role_name=:user_role_name,user_role_desc ",nativeQuery = true)
-    void updateUserRole();
+//    @Modifying
+//    @Query(value = "UPDATE cms.user_role SET user_role_name=:user_role_name,user_role_desc ", nativeQuery = true)
+//    void updateUserRole();
 }
