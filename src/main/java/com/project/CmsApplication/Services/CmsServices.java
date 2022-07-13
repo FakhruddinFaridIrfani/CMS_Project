@@ -1,15 +1,9 @@
 package com.project.CmsApplication.Services;
 
 import com.project.CmsApplication.Utility.DateFormatter;
-import com.project.CmsApplication.model.BaseResponse;
-import com.project.CmsApplication.model.Role;
-import com.project.CmsApplication.model.UserRole;
-import com.project.CmsApplication.model.Users;
-import com.project.CmsApplication.repository.CompanyRepository;
+import com.project.CmsApplication.model.*;
+import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
-import com.project.CmsApplication.repository.RoleRepository;
-import com.project.CmsApplication.repository.UserRoleRepository;
-import com.project.CmsApplication.repository.UsersRepository;
 import org.apache.catalina.User;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +21,9 @@ public class CmsServices {
 
     @Autowired
     CompanyRepository companyRepository;
+
+    @Autowired
+    RegionRepository regionRepository;
 
     @Autowired
     UsersRepository usersRepository;
@@ -350,9 +347,7 @@ public class CmsServices {
                 response.setMessage("Failed to login. wrong User Name, Email, or Password");
                 return response;
             }
-            for (int i = 0; i < dataLoginUser.size(); i++) {
-                dataLoginUser.get(i).setUser_password("null");
-            }
+
             List<Integer> userRoleId = getUserRoleByUserId(dataLoginUser.get(0).getUser_id());
             for (int i = 0; i < userRoleId.size(); i++) {
                 int current_id = userRoleId.get(i);
@@ -362,6 +357,9 @@ public class CmsServices {
                 user_role.add(user_role_name);
             }
 
+            for (int i = 0; i < dataLoginUser.size(); i++) {
+                dataLoginUser.get(i).setUser_password("null");
+            }
 
             result.put("user_data", dataLoginUser);
             result.put("user_role", user_role);
@@ -394,7 +392,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
 
-            userRoleRepository.save(jsonInput.optString("user_id"), jsonInput.optString("role_id"), userOnProcess);
+            userRoleRepository.save(jsonInput.optInt("user_id"), jsonInput.optInt("role_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User Role successfully created");
@@ -455,6 +453,312 @@ public class CmsServices {
         }
         return roleIdList;
     }
+
+    //COMPANY SECTION
+    public BaseResponse<String> addNewCompany(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            companyRepository.save(jsonInput.optString("company_name"), jsonInput.optString("company_address"),
+                    jsonInput.optString("company_phone"), jsonInput.optString("company_email"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Company successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Company>> getCompanyList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String company_name;
+        String company_address;
+        String company_email;
+        String company_phone;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            company_name = "%" + jsonInput.optString("company_name") + "%";
+            company_address = "%" + jsonInput.optString("company_address") + "%";
+            company_email = "%" + jsonInput.optString("company_email") + "%";
+            company_phone = "%" + jsonInput.optString("company_phone") + "%";
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Company> getCompanyResult = companyRepository.getCompanyList(company_name, company_address, company_phone, company_email,
+                    status, created_by, created_date, updated_by, updated_date);
+            response.setData(getCompanyResult);
+
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Company Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Company> updateCompany(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phen"),
+                    jsonInput.optString("company_email"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("company_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Company successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Company> deleteCompany(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            companyRepository.deleteCompany(jsonInput.optInt("company_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("User successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Company> getCompanyById(int company_id) {
+        List<Company> getCompanyResult = new ArrayList<>();
+        getCompanyResult = companyRepository.getCompanyById(company_id);
+        return getCompanyResult;
+    }
+
+    public List<Company> getCompanyByName(String company_name) {
+        List<Company> getCompanyResult = new ArrayList<>();
+        getCompanyResult = companyRepository.getCompanyByName(company_name);
+        return getCompanyResult;
+    }
+
+    //REGION SECTION
+    public BaseResponse<String> addNewRegion(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            regionRepository.save(jsonInput.optInt("company_id"), jsonInput.optString("region_name"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getRegionList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String region_name;
+        String company_id;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            region_name = "%" + jsonInput.optString("region_name") + "%";
+            company_id = "%" + jsonInput.optInt("company_id") + "%";
+            if (company_id.compareToIgnoreCase("%null%") == 0 || company_id.compareToIgnoreCase("%0%") == 0) {
+                company_id = "%%";
+            }
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Region> getRegionResult = regionRepository.getRegionList(region_name, company_id, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getRegionResult.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Company> company = getCompanyById(getRegionResult.get(i).getCompany_id());
+                resultMap.put("region", getRegionResult.get(i));
+                resultMap.put("company", company.get(0).getCompany_name());
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Region> updateRegion(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("region_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Region> deleteRegion(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            regionRepository.deleteRegion(jsonInput.optInt("region_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Region> getRegionById(int company_id) {
+        List<Region> getCompanyResult = new ArrayList<>();
+        getCompanyResult = regionRepository.getRegionById(company_id);
+        return getCompanyResult;
+    }
+
+    public List<Region> getRegionByName(String region_name) {
+        List<Region> getCompanyResult = new ArrayList<>();
+        getCompanyResult = regionRepository.getRegionByName(region_name);
+        return getCompanyResult;
+    }
+
 
     //TOKEN AUTH
     public Map<String, Object> tokenAuthentication(String token) {

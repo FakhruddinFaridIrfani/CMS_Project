@@ -32,9 +32,9 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
                                    @Param("updated_date") String updated_date);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.user_role(user_id,role_id,status,created_by,created_date,updated_by,updated_date) " +
-            "VALUES(:user_id,:role_id,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("user_id") String user_id, @Param("role_id") String role_desc, @Param("created_by") String created_by);
+    @Query(value = "INSERT INTO cms.user_role(status,user_id,role_id,created_by,created_date,updated_by,updated_date) " +
+            "VALUES('active',:user_id,:role_id,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+    void save(@Param("user_id") int user_id, @Param("role_id") int role_id, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status ='active'", nativeQuery = true)
     List<UserRole> getUserRoleByUserId(@Param("user_id") int user_id);

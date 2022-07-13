@@ -23,6 +23,7 @@ public class Users {
     @NotNull
     @Column(name = "user_password")
     public String user_password;
+
     @NotNull
     @Column(name = "user_email")
     public String user_email;

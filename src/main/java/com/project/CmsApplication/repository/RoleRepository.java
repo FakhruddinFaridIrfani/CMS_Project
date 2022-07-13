@@ -46,7 +46,7 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
                     @Param("updated_by") String updated_by, @Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Role SET status = 'Inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Role SET status = 'inactive',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE role_id=:role_id", nativeQuery = true)
     void deleteRole(@Param("role_id") int role_id, @Param("updated_by") String updated_by);
 
