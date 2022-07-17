@@ -14,15 +14,14 @@ import java.util.List;
 @Transactional
 public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
 
-    @Query(value = "SELECT * FROM cms.user_role" +
-            "WHERE " +
-            "CAST(ur.user_id AS VARCHAR) like :user_id " +
-            "AND CAST(ur.role_id AS VARCHAR) like :role_id " +
-            "AND ur.status like :status" +
-            "AND ur.created_by like :created_by " +
-            "AND CAST(ur.created_date AS VARCHAR) like :created_date " +
-            "AND ur.updated_by like :updated_by " +
-            "AND CAST(ur.updated_date AS VARCHAR) like :updated_date", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.user_role " +
+            "WHERE CAST(user_id AS VARCHAR) like :user_id " +
+            "AND CAST(role_id AS VARCHAR) like :role_id " +
+            "AND status like :status " +
+            "AND created_by like :created_by " +
+            "AND CAST(created_date AS VARCHAR) like :created_date " +
+            "AND updated_by like :updated_by " +
+            "AND CAST(updated_date AS VARCHAR) like :updated_date", nativeQuery = true)
     List<UserRole> getUserRoleList(@Param("user_id") String user_id,
                                    @Param("role_id") String role_id,
                                    @Param("status") String status,

@@ -26,6 +26,12 @@ public class CmsServices {
     RegionRepository regionRepository;
 
     @Autowired
+    BranchRepository branchRepository;
+
+    @Autowired
+    PromoRepository promoRepository;
+
+    @Autowired
     UsersRepository usersRepository;
 
     @Autowired
@@ -251,6 +257,9 @@ public class CmsServices {
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date);
+            for (int i = 0; i < getUserResult.size(); i++) {
+                getUserResult.get(i).setUser_password("null");
+            }
             response.setData(getUserResult);
 
             response.setStatus("2000");
@@ -425,15 +434,22 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
             user_id = "%" + jsonInput.optInt("user_id") + "%";
+            if (user_id.isEmpty() || user_id.compareToIgnoreCase("%null%") == 0 || user_id.compareToIgnoreCase("%0%") == 0) {
+                user_id = "%%";
+            }
             role_id = "%" + jsonInput.optInt("role_id") + "%";
+            if (role_id.isEmpty() || role_id.compareToIgnoreCase("%null%") == 0 || user_id.compareToIgnoreCase("%0%") == 0) {
+                role_id = "%%";
+            }
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
                 status = "%%";
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            response.setData(userRoleRepository.getUserRoleList(user_id, role_id, status, created_by,
-                    created_date, updated_by, updated_date));
+            List<UserRole> userRoleList = userRoleRepository.getUserRoleList(user_id, role_id, status, created_by,
+                    created_date, updated_by, updated_date);
+            response.setData(userRoleList);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User Role Listed");
@@ -675,7 +691,8 @@ public class CmsServices {
                 Map resultMap = new HashMap();
                 List<Company> company = getCompanyById(getRegionResult.get(i).getCompany_id());
                 resultMap.put("region", getRegionResult.get(i));
-                resultMap.put("company", company.get(0).getCompany_name());
+                resultMap.put("company_name", company.get(0).getCompany_name());
+                resultMap.put("company_id", company.get(0).getCompany_id());
 
                 result.add(resultMap);
             }
@@ -707,7 +724,7 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("region_id"));
+            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("region_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Region successfully Updated");
@@ -747,9 +764,9 @@ public class CmsServices {
         return response;
     }
 
-    public List<Region> getRegionById(int company_id) {
+    public List<Region> getRegionById(int region_id) {
         List<Region> getCompanyResult = new ArrayList<>();
-        getCompanyResult = regionRepository.getRegionById(company_id);
+        getCompanyResult = regionRepository.getRegionById(region_id);
         return getCompanyResult;
     }
 
@@ -757,6 +774,339 @@ public class CmsServices {
         List<Region> getCompanyResult = new ArrayList<>();
         getCompanyResult = regionRepository.getRegionByName(region_name);
         return getCompanyResult;
+    }
+
+    //BRANCH SECTION
+    public BaseResponse<String> addNewBranch(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            branchRepository.save(jsonInput.optInt("region_id"), jsonInput.optString("branch_name"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Branch successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getBranchList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String branch_name;
+        String region_id;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            branch_name = "%" + jsonInput.optString("branch_name") + "%";
+            region_id = "%" + jsonInput.optInt("region_id") + "%";
+            if (region_id.compareToIgnoreCase("%null%") == 0 || region_id.compareToIgnoreCase("%0%") == 0) {
+                region_id = "%%";
+            }
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Branch> getBranchResult = branchRepository.getBranchList(branch_name, region_id, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getBranchResult.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Region> region = getRegionById(getBranchResult.get(i).getRegion_id());
+                List<Company> company = getCompanyById(region.get(0).getCompany_id());
+                resultMap.put("company_name", company.get(0).getCompany_name());
+                resultMap.put("company_id", company.get(0).getCompany_id());
+                resultMap.put("branch", getBranchResult.get(i));
+                resultMap.put("region_name", region.get(0).getRegion_name());
+                resultMap.put("region_id", region.get(0).getRegion_id());
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Branch Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Branch> updateBranch(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("branch_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Branch successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Branch> deleteBranch(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Branch successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Branch> getBranchById(int branch_id) {
+        List<Branch> getBranchResult = new ArrayList<>();
+        getBranchResult = branchRepository.getBranchById(branch_id);
+        return getBranchResult;
+    }
+
+    public List<Branch> getBranchByName(String branch_name) {
+        List<Branch> getBranchResult = new ArrayList<>();
+        getBranchResult = branchRepository.getBranchByName(branch_name);
+        return getBranchResult;
+    }
+
+    //BRANCH SECTION
+    public BaseResponse<String> addNewPromo(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("descriptio"),
+                    jsonInput.optString("popup"), jsonInput.optString("popup_descriptio"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Promo successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getPromoList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String branch_id;
+        String tittle;
+        String file;
+        String description;
+        String popup;
+        String popup_description;
+        String start_date;
+        String end_date;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            branch_id = "%" + jsonInput.optInt("branch_id") + "%";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("%null%") == 0 || branch_id.compareToIgnoreCase("%0%") == 0) {
+                branch_id = "%%";
+            }
+            tittle = "%" + jsonInput.optString("tittle") + "%";
+            file = "%" + jsonInput.optString("file") + "%";
+            description = "%" + jsonInput.optString("description") + "%";
+            popup = "%" + jsonInput.optString("popup") + "%";
+            popup_description = "%" + jsonInput.optString("popup_description") + "%";
+            start_date = "%" + jsonInput.optString("start_date") + "%";
+            end_date = "%" + jsonInput.optString("end_date") + "%";
+
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Promo> getPromoResult = promoRepository.getPromoList(branch_id, tittle, file, description, popup, popup_description,
+                    start_date, end_date, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getPromoResult.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Branch> branches = getBranchById(getPromoResult.get(i).getBranch_id());
+                List<Region> region = getRegionById(branches.get(0).getRegion_id());
+                List<Company> company = getCompanyById(region.get(0).getCompany_id());
+                resultMap.put("company_name", company.get(0).getCompany_name());
+                resultMap.put("company_id", company.get(0).getCompany_id());
+                resultMap.put("promo", getPromoResult.get(i));
+                resultMap.put("region_name", region.get(0).getRegion_name());
+                resultMap.put("region_id", region.get(0).getRegion_id());
+                resultMap.put("branch_name", branches.get(0).getBranch_name());
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Promo Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Promo> updatePromo(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("descriptiom"),
+                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
+                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Promo successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Promo> deletePromo(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Branch successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Promo> getPromoById(int promo_id) {
+        List<Promo> getPromoResult = new ArrayList<>();
+        getPromoResult = promoRepository.getPromoById(promo_id);
+        return getPromoResult;
     }
 
 

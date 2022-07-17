@@ -6,18 +6,19 @@ import com.project.CmsApplication.model.Role;
 import com.project.CmsApplication.model.Users;
 import com.project.CmsApplication.repository.RoleRepository;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
 import java.text.ParseException;
+import java.util.Date;
 import java.util.List;
 
 
 @RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("role")
 public class RoleController {
 
@@ -27,23 +28,29 @@ public class RoleController {
     @Autowired
     RoleRepository roleRepository;
 
+    Logger logger = LoggerFactory.getLogger(RoleController.class);
+
     @PostMapping("/addNewRole")
     public BaseResponse<String> addNewRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewRole - " + input);
         return cmsServices.addNewRole(input);
     }
 
     @PostMapping("/getRoleList")
     public BaseResponse<List<Role>> getRoleList(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getRoleList - " + input);
         return cmsServices.getRoleList(input);
     }
 
     @PostMapping("/updateRole")
     public BaseResponse<Role> updateRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : updateRole - " + input);
         return cmsServices.updateRole(input);
     }
 
     @PostMapping("/deleteRole")
     public BaseResponse<Role> deleteRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : deleteRole - " + input);
         return cmsServices.deleteRole(input);
     }
 

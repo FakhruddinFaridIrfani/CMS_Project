@@ -43,9 +43,9 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
     List<Region> getRegionByName(@Param("region_name") String region_name);
 
     @Modifying
-    @Query(value = "UPDATE cms.Region SET region_name=:region_name,status=:status," +
+    @Query(value = "UPDATE cms.Region SET region_name=:region_name,company_id=:company_id,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE region_id =:region_id ", nativeQuery = true)
-    void updateRegion(@Param("region_name") String region_name, @Param("status") String status,
+    void updateRegion(@Param("region_name") String region_name,@Param("company_id") int company_id,@Param("status") String status,
                       @Param("updated_by") String updated_by, @Param("region_id") int region_id);
 
     @Modifying
