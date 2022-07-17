@@ -4,6 +4,7 @@ import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
+import javafx.geometry.Pos;
 import org.apache.catalina.User;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,18 @@ public class CmsServices {
 
     @Autowired
     PromoRepository promoRepository;
+
+    @Autowired
+    DeviceRepository deviceRepository;
+
+    @Autowired
+    PositionRepository positionRepository;
+
+    @Autowired
+    ResourceRepository resourceRepository;
+
+    @Autowired
+    PlaylistRepository playlistRepository;
 
     @Autowired
     UsersRepository usersRepository;
@@ -936,7 +949,7 @@ public class CmsServices {
         return getBranchResult;
     }
 
-    //BRANCH SECTION
+    //PROMO SECTION
     public BaseResponse<String> addNewPromo(String input) throws Exception {
         BaseResponse response = new BaseResponse();
         try {
@@ -1107,6 +1120,669 @@ public class CmsServices {
         List<Promo> getPromoResult = new ArrayList<>();
         getPromoResult = promoRepository.getPromoById(promo_id);
         return getPromoResult;
+    }
+
+
+    //DEVICE SECTION
+    public BaseResponse<String> addNewDevice(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            deviceRepository.save(jsonInput.optString("device_name"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Device successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Device>> getDeviceList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String device_name;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            device_name = "%" + jsonInput.optString("device_name") + "%";
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Device> getDeviceResult = deviceRepository.getDeviceList(device_name, status, created_by, created_date, updated_by, updated_date);
+
+
+            response.setData(getDeviceResult);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Device Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Device> updateDevice(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            deviceRepository.updateDevice(jsonInput.optString("device_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("device_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Device successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Device> deleteDevice(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            deviceRepository.deleteDevice(jsonInput.optInt("device_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Device successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Device> getDeviceById(int device_id) {
+        List<Device> getDeviceResult = new ArrayList<>();
+        getDeviceResult = deviceRepository.getDeviceById(device_id);
+        return getDeviceResult;
+    }
+
+    public List<Device> getDeviceByName(String device_name) {
+        List<Device> getDeviceResult = new ArrayList<>();
+        getDeviceResult = deviceRepository.getDeviceByName(device_name);
+        return getDeviceResult;
+    }
+
+    //POSITION SECTION
+    public BaseResponse<String> addNewPosition(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            positionRepository.save(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
+                    jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("measurement"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Position successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getPositionList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String device_id;
+        String box;
+        String x_pos;
+        String y_pos;
+        String width;
+        String height;
+        String measurement;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+
+            device_id = "%" + jsonInput.optInt("device_id") + "%";
+            if (device_id.isEmpty() || device_id.compareToIgnoreCase("%null%") == 0 || device_id.compareToIgnoreCase("%0%") == 0) {
+                device_id = "%%";
+            }
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            box = "%" + jsonInput.optString("box") + "%";
+            x_pos = "%" + jsonInput.optString("x_pos") + "%";
+            y_pos = "%" + jsonInput.optString("y_pos") + "%";
+            width = "%" + jsonInput.optString("width") + "%";
+            height = "%" + jsonInput.optString("height") + "%";
+            measurement = "%" + jsonInput.optString("measurement") + "%";
+
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Position> getPositionResult = positionRepository.getPositionList(device_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getPositionResult.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Device> devices = deviceRepository.getDeviceById(getPositionResult.get(i).getDevice_id());
+                resultMap.put("position", getPositionResult.get(i));
+                resultMap.put("device_name", devices.get(0).getDevice_name());
+                resultMap.put("device_id", devices.get(0).getDevice_id());
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Position> updatePosition(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            positionRepository.updatePosition(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
+                    jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("status"),
+                    jsonInput.optString("measurement"), userOnProcess, jsonInput.optInt("position_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Position successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Position> deletePosition(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            positionRepository.deletePosition(jsonInput.optInt("position_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Region successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Position> getPositionById(int position_id) {
+        List<Position> getPositionResult = new ArrayList<>();
+        getPositionResult = positionRepository.getPositionById(position_id);
+        return getPositionResult;
+    }
+
+
+    //RESOURCE SECTION
+    public BaseResponse<String> addNewResource(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
+                    jsonInput.optString("file"), jsonInput.optString("duration"), jsonInput.optString("stretch"), jsonInput.optString("order"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Resource successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Resource>> getResourceList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String resource_name;
+        String type;
+        String thumbnail;
+        String file;
+        String duration;
+        String stretch;
+        String order;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            resource_name = "%" + jsonInput.optString("resource_name") + "%";
+            type = "%" + jsonInput.optString("type") + "%";
+            thumbnail = "%" + jsonInput.optString("thumbnail") + "%";
+            file = "%" + jsonInput.optString("file") + "%";
+            duration = "%" + jsonInput.optString("duration") + "%";
+            stretch = "%" + jsonInput.optString("stretch") + "%";
+            order = "%" + jsonInput.optString("order") + "%";
+
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
+                    stretch, order, status, created_by, created_date, updated_by, updated_date);
+
+
+            response.setData(getResourceResult);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Resource Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Resource> updateResource(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), jsonInput.optString("file"),
+                    jsonInput.optString("duration"), jsonInput.optString("stretch"), jsonInput.optString("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Resource successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Resource> deleteResource(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            resourceRepository.deleteResource(jsonInput.optInt("resource_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Resource successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Resource> getResourceById(int resource_id) {
+        List<Resource> getResourceResult = new ArrayList<>();
+        getResourceResult = resourceRepository.getResourceById(resource_id);
+        return getResourceResult;
+    }
+
+    public List<Resource> getResourceByName(String resource_name) {
+        List<Resource> getResourceResult = new ArrayList<>();
+        getResourceResult = resourceRepository.getResourceByName(resource_name);
+        return getResourceResult;
+    }
+
+    //PLAYLIST SECTION
+    public BaseResponse<String> addNewPlaylist(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            int currentSort = 1;
+            List<Playlist> latestSort = playlistRepository.getSortOrder(jsonInput.optInt("position_id"), jsonInput.optInt("branch_id"));
+            if (latestSort.size() > 0) {
+                currentSort = latestSort.get(0).getSort() + 1;
+            }
+            playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("position_id"), jsonInput.optInt("resource_id"),
+                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), currentSort, userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Playlist successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Playlist>> getPlaylistList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String playlist_name;
+        String branch_id;
+        String position_id;
+        String resource_id;
+        String start_date;
+        String end_date;
+        String sort;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            playlist_name = "%" + jsonInput.optString("playlist_name") + "%";
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            position_id = jsonInput.optInt("position_id") + "";
+            if (position_id.isEmpty() || position_id.compareToIgnoreCase("null") == 0 || position_id.compareToIgnoreCase("0") == 0) {
+                position_id = "%%";
+            }
+            resource_id = jsonInput.optInt("resource_id") + "";
+            if (resource_id.isEmpty() || resource_id.compareToIgnoreCase("null") == 0 || resource_id.compareToIgnoreCase("0") == 0) {
+                resource_id = "%%";
+            }
+            start_date = "%" + jsonInput.optString("start_date") + "%";
+            end_date = "%" + jsonInput.optString("end_date") + "%";
+
+            sort = jsonInput.optInt("sort") + "";
+            if (sort.isEmpty() || sort.compareToIgnoreCase("null") == 0 || sort.compareToIgnoreCase("0") == 0) {
+                sort = "%%";
+            }
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Playlist> getResultPlayList = playlistRepository.getPlaylistList(playlist_name, branch_id, position_id, resource_id, start_date,
+                    end_date, sort, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getResultPlayList.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
+                List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
+                List<Resource> resources = resourceRepository.getResourceById(getResultPlayList.get(i).getResource_id());
+                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getDevice_id());
+                List<Region> regions = regionRepository.getRegionById(branch.get(0).getRegion_id());
+                List<Company> companies = companyRepository.getCompanyById(regions.get(0).getCompany_id());
+                resultMap.put("company", companies.get(0));
+                resultMap.put("region", regions.get(0));
+                resultMap.put("device", devices.get(0));
+                resultMap.put("position", positions.get(0));
+                resultMap.put("branch", branch.get(0));
+                resultMap.put("resource", resources.get(0));
+                resultMap.put("playlist", getResultPlayList.get(i));
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Playlist Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Playlist> updatePlaylist(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            playlistRepository.updatePlaylist(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("position_id"),
+                    jsonInput.optInt("resource_id"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), jsonInput.optString("status"),
+                    userOnProcess, jsonInput.optInt("playlist_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Playlist successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Playlist> deletePlaylist(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            resourceRepository.deleteResource(jsonInput.optInt("playlist_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Playlist successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Playlist> getPlaylistById(int playlist_id) {
+        List<Playlist> getPlaylistResource = new ArrayList<>();
+        getPlaylistResource = playlistRepository.getPlaylistById(playlist_id);
+        return getPlaylistResource;
+    }
+
+    public List<Playlist> getPlaylistByName(String playlist_name) {
+        List<Playlist> getPlaylistResource = new ArrayList<>();
+        getPlaylistResource = playlistRepository.getPlaylistByName(playlist_name);
+        return getPlaylistResource;
     }
 
 
