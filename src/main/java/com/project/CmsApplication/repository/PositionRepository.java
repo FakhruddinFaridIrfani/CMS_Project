@@ -16,7 +16,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
 
     @Query(value = "SELECT * FROM cms.Position WHERE " +
             "CAST(device_id AS VARCHAR) like :device_id AND " +
-            "box like:box AND" +
+            "box like :box AND " +
             "x_pos like :x_pos AND " +
             "y_pos like :y_pos AND " +
             "width like :width AND " +

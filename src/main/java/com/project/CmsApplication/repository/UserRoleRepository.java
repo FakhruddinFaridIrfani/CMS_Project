@@ -41,7 +41,13 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
     @Query(value = "SELECT * FROM cms.user_role WHERE user_role_name like :user_role_name", nativeQuery = true)
     List<UserRole> getUserRoleByName(@Param("user_role_name") String user_role_name);
 
-//    @Modifying
-//    @Query(value = "UPDATE cms.user_role SET user_role_name=:user_role_name,user_role_desc ", nativeQuery = true)
-//    void updateUserRole();
+    @Modifying
+    @Query(value = "UPDATE cms.user_role SET role_id=:role_id,status =:status,updated_by=:updated_by," +
+            "updated_date=current_timestamp WHERE user_role_id=:user_role_id", nativeQuery = true)
+    void updateUserRole(@Param("role_id") int role_id, @Param("status") String status,
+                        @Param("updated_by") String updated_by, @Param("user_role_id") int user_role_id);
+
+    @Modifying
+    @Query(value = "UPDATE cms.user_role SET status = 'inactive',updated_by=:updated_by,updated_date=current_timestamp WHERE user_role_id=:user_role_id", nativeQuery = true)
+    void deleteUserRole(@Param("user_role_id") int user_role_id, @Param("updated_by") String updated_by);
 }

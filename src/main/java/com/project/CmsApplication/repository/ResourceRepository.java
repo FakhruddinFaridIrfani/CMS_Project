@@ -19,9 +19,9 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
             "\"type\" like :type AND " +
             "thumbnail like :thumbnail AND " +
             "\"file\" like :file AND " +
-            "duration like :duration AND " +
+            "CAST(duration AS VARCHAR )like :duration AND " +
             "stretch like :stretch AND " +
-            "\"order\" like :order AND " +
+            "CAST(\"order\" AS VARCHAR) like :order AND " +
             "status like :status AND " +
             "created_by like :created_by AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
@@ -41,8 +41,8 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
             "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:order,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
     void save(@Param("resource_name") String resource_name, @Param("type") String type,
               @Param("thumbnail") String thumbnail, @Param("file") String file,
-              @Param("duration") String duration, @Param("stretch") String stretch,
-              @Param("order") String order,
+              @Param("duration") int duration, @Param("stretch") String stretch,
+              @Param("order") int order,
               @Param("created_by") String created_by);
 
     @Query(value = "SELECT * FROM cms.Resource WHERE resource_id =:resource_id", nativeQuery = true)
@@ -57,8 +57,8 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
             "updated_by=:updated_by,updated_date=current_timestamp WHERE resource_id =:resource_id ", nativeQuery = true)
     void updateResource(@Param("resource_name") String resource_name, @Param("type") String type,
                         @Param("thumbnail") String thumbnail, @Param("file") String file,
-                        @Param("duration") String duration, @Param("stretch") String stretch,
-                        @Param("order") String order, @Param("status") String status,
+                        @Param("duration") int duration, @Param("stretch") String stretch,
+                        @Param("order") int order, @Param("status") String status,
                         @Param("updated_by") String updated_by, @Param("resource_id") int resource_id);
 
     @Modifying

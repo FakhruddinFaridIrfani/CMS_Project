@@ -428,8 +428,9 @@ public class CmsServices {
         return response;
     }
 
-    public BaseResponse<List<UserRole>> getUserRole(String input) throws Exception, SQLException {
+    public BaseResponse<List<Map<String, Object>>> getUserRole(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
@@ -446,12 +447,12 @@ public class CmsServices {
             if (jsonInput.optString("updated_date").length() > 0) {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
-            user_id = "%" + jsonInput.optInt("user_id") + "%";
-            if (user_id.isEmpty() || user_id.compareToIgnoreCase("%null%") == 0 || user_id.compareToIgnoreCase("%0%") == 0) {
+            user_id = jsonInput.optInt("user_id") + "";
+            if (user_id.isEmpty() || user_id.compareToIgnoreCase("null") == 0 || user_id.compareToIgnoreCase("0") == 0) {
                 user_id = "%%";
             }
-            role_id = "%" + jsonInput.optInt("role_id") + "%";
-            if (role_id.isEmpty() || role_id.compareToIgnoreCase("%null%") == 0 || user_id.compareToIgnoreCase("%0%") == 0) {
+            role_id = jsonInput.optInt("role_id") + "";
+            if (role_id.isEmpty() || role_id.compareToIgnoreCase("null") == 0 || role_id.compareToIgnoreCase("0") == 0) {
                 role_id = "%%";
             }
             status = jsonInput.optString("status");
@@ -462,10 +463,75 @@ public class CmsServices {
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<UserRole> userRoleList = userRoleRepository.getUserRoleList(user_id, role_id, status, created_by,
                     created_date, updated_by, updated_date);
-            response.setData(userRoleList);
+            for (int i = 0; i < userRoleList.size(); i++) {
+                Map resultMap = new HashMap();
+                List<Role> roles = roleRepository.getRoleById(userRoleList.get(i).getRole_id());
+                resultMap.put("role", roles.get(0));
+                resultMap.put("user_role", userRoleList.get(i));
+
+                result.add(resultMap);
+            }
+
+            response.setData(result);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User Role Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<UserRole> updateUserRole(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            userRoleRepository.updateUserRole(jsonInput.optInt("role_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("user_role_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("User Role successfully Updated");
+
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<UserRole> deleteUserRole(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            userRoleRepository.deleteUserRole(jsonInput.optInt("user_role_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("User successfully deleted");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -963,8 +1029,8 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("descriptio"),
-                    jsonInput.optString("popup"), jsonInput.optString("popup_descriptio"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
+            promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("description"),
+                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Promo successfully Added");
@@ -1043,6 +1109,7 @@ public class CmsServices {
                 resultMap.put("region_name", region.get(0).getRegion_name());
                 resultMap.put("region_id", region.get(0).getRegion_id());
                 resultMap.put("branch_name", branches.get(0).getBranch_name());
+                resultMap.put("branch_id", branches.get(0).getBranch_id());
 
                 result.add(resultMap);
             }
@@ -1074,7 +1141,7 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("descriptiom"),
+            promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
                     jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"));
             response.setStatus("2000");
@@ -1104,10 +1171,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
+            promoRepository.deletePromo(jsonInput.optInt("promo_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
-            response.setMessage("Branch successfully deleted");
+            response.setMessage("Promo successfully deleted");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -1327,8 +1394,8 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
 
-            device_id = "%" + jsonInput.optInt("device_id") + "%";
-            if (device_id.isEmpty() || device_id.compareToIgnoreCase("%null%") == 0 || device_id.compareToIgnoreCase("%0%") == 0) {
+            device_id = jsonInput.optInt("device_id") + "";
+            if (device_id.isEmpty() || device_id.compareToIgnoreCase("null") == 0 || device_id.compareToIgnoreCase("0") == 0) {
                 device_id = "%%";
             }
             status = jsonInput.optString("status");
@@ -1360,7 +1427,7 @@ public class CmsServices {
             response.setData(result);
             response.setStatus("2000");
             response.setSuccess(true);
-            response.setMessage("Region Listed");
+            response.setMessage("Position Listed");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -1416,7 +1483,7 @@ public class CmsServices {
             positionRepository.deletePosition(jsonInput.optInt("position_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
-            response.setMessage("Region successfully deleted");
+            response.setMessage("Position successfully deleted");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -1447,7 +1514,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
-                    jsonInput.optString("file"), jsonInput.optString("duration"), jsonInput.optString("stretch"), jsonInput.optString("order"), userOnProcess);
+                    jsonInput.optString("file"), jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Resource successfully Added");
@@ -1497,10 +1564,15 @@ public class CmsServices {
             type = "%" + jsonInput.optString("type") + "%";
             thumbnail = "%" + jsonInput.optString("thumbnail") + "%";
             file = "%" + jsonInput.optString("file") + "%";
-            duration = "%" + jsonInput.optString("duration") + "%";
+            duration = jsonInput.optInt("duration") + "";
+            if (duration.isEmpty() || duration.compareToIgnoreCase("null") == 0 || duration.compareToIgnoreCase("0") == 0) {
+                duration = "%%";
+            }
             stretch = "%" + jsonInput.optString("stretch") + "%";
-            order = "%" + jsonInput.optString("order") + "%";
-
+            order = jsonInput.optInt("order") + "";
+            if (order.isEmpty() || order.compareToIgnoreCase("null") == 0 || order.compareToIgnoreCase("0") == 0) {
+                order = "%%";
+            }
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
                 status = "%%";
@@ -1538,7 +1610,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), jsonInput.optString("file"),
-                    jsonInput.optString("duration"), jsonInput.optString("stretch"), jsonInput.optString("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
+                    jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Resource successfully Updated");

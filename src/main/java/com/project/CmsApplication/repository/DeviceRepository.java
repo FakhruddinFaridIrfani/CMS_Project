@@ -30,7 +30,7 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
 
     @Modifying
     @Query(value = "INSERT INTO cms.Device(status,device_name,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active':device_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+            "VALUES('active',:device_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
     void save(@Param("device_name") String device_name, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * FROM cms.Device WHERE device_id =:device_id", nativeQuery = true)

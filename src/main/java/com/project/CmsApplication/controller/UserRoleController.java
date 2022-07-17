@@ -6,6 +6,8 @@ import com.project.CmsApplication.model.BaseResponse;
 import com.project.CmsApplication.model.UserRole;
 import com.project.CmsApplication.repository.UserRoleRepository;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,10 +15,12 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "*",allowedHeaders = "*")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("userRole")
 public class UserRoleController {
     DateFormatter dateFormatter;
@@ -26,15 +30,30 @@ public class UserRoleController {
     @Autowired
     CmsServices cmsServices;
 
+    Logger logger = LoggerFactory.getLogger(UserRoleController.class);
 
     @PostMapping("/getUserRole")
-    public BaseResponse<List<UserRole>> getUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+    public BaseResponse<List<Map<String, Object>>> getUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getUserRole - " + input);
         return cmsServices.getUserRole(input);
     }
 
     @PostMapping("/addNewUserRole")
     public BaseResponse<String> addNewUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewUserRole - " + input);
         return cmsServices.addNewUserRole(input);
+    }
+
+    @PostMapping("/updateUserRole")
+    public BaseResponse<UserRole> updateUsrRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : updateUserRole - " + input);
+        return cmsServices.updateUserRole(input);
+    }
+
+    @PostMapping("/deleteUserRole")
+    public BaseResponse<UserRole> deleteUserRole(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : deleteUserRole - " + input);
+        return cmsServices.deleteUserRole(input);
     }
 
 

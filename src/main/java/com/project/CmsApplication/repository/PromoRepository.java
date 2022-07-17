@@ -16,7 +16,7 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
 
     @Query(value = "SELECT * FROM cms.Promo WHERE " +
             "CAST(branch_id AS VARCHAR) like :branch_id AND " +
-            "title like :title AND " +
+            "tittle like :tittle AND " +
             "file like :file AND " +
             "description like :description AND " +
             "popup like :popup AND " +
@@ -30,7 +30,7 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Promo> getPromoList(
             @Param("branch_id") String branch_id,
-            @Param("title") String title,
+            @Param("tittle") String tittle,
             @Param("file") String file,
             @Param("description") String description,
             @Param("popup") String popup,
@@ -45,7 +45,7 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
 
     @Modifying
     @Query(value = "INSERT INTO cms.Promo(status,branch_id,tittle,file,description,popup,popup_description,start_date,end_date,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:branch_id,:tittle,:file,:description,:popup,:popup_description,CAST(:start_date,date),CAST(:end_date,date),:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+            "VALUES('active',:branch_id,:tittle,:file,:description,:popup,:popup_description,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
     void save(@Param("branch_id") int branch_id, @Param("tittle") String tittle,
               @Param("file") String file, @Param("description") String description,
               @Param("popup") String popup, @Param("popup_description") String popup_description,
@@ -57,8 +57,8 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
 
 
     @Modifying
-    @Query(value = "UPDATE cms.Promo SET branch_id=:branch_id,tittle=:tittle,file=:file,description=:description,popup=:popup,popup_description=:popup_description" +
-            "start_date=CAST(:start_date,date),end_date =CAST(:end_date,date) ,status=:status," +
+    @Query(value = "UPDATE cms.Promo SET branch_id=:branch_id,tittle=:tittle,file=:file,description=:description,popup=:popup,popup_description=:popup_description," +
+            "start_date=CAST(:start_date AS timestamp),end_date =CAST(:end_date AS timestamp) ,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE promo_id =:promo_id ", nativeQuery = true)
     void updatePromo(@Param("branch_id") int branch_id, @Param("tittle") String tittle, @Param("file") String file,
                      @Param("description") String description, @Param("popup") String popup,
