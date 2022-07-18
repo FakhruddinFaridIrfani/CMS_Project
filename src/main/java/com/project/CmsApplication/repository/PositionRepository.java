@@ -16,16 +16,17 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
 
     @Query(value = "SELECT * FROM cms.Position WHERE " +
             "CAST(device_id AS VARCHAR) like :device_id AND " +
-            "box like :box AND " +
+            "lower(box) like lower(:box) AND " +
             "x_pos like :x_pos AND " +
             "y_pos like :y_pos AND " +
             "width like :width AND " +
             "height like :height AND " +
-            "measurement like :measurement AND " +
+            "lower(measurement) like lower(:measurement) AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Position> getPositionList(
             @Param("device_id") String device_id,
@@ -64,7 +65,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
                         @Param("measurement") String measurement, @Param("updated_by") String updated_by, @Param("position_id") int position_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Position SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Position SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE position_id=:position_id", nativeQuery = true)
     void deletePosition(@Param("position_id") int position_id, @Param("updated_by") String updated_by);
 

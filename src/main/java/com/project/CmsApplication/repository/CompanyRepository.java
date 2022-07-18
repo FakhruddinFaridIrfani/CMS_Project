@@ -16,14 +16,15 @@ import java.util.List;
 public interface CompanyRepository extends JpaRepository<Company, Integer> {
 
     @Query(value = "SELECT * FROM cms.company WHERE " +
-            "company_name like :company_name " +
-            "AND company_address like :company_address " +
+            "lower(company_name) like lower(:company_name) " +
+            "AND lower((company_address) like lower(:company_address) " +
             "AND company_phone like :company_phone " +
-            "AND company_email like :company_email " +
+            "AND lower(company_email) like lower(:company_email) " +
             "AND status like :status " +
-            "AND created_by like :created_by " +
+            "AND status not in('deleted') " +
+            "AND lower(created_by) like lower(:created_by) " +
             "AND CAST(created_date AS VARCHAR) like :created_date " +
-            "AND updated_by like :updated_by " +
+            "AND lower(updated_by) like lower(:updated_by) " +
             "AND CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Company> getCompanyList(@Param("company_name") String company_name, @Param("company_address") String company_address,
                                  @Param("company_phone") String company_phone, @Param("company_email") String company_email,
@@ -51,6 +52,6 @@ public interface CompanyRepository extends JpaRepository<Company, Integer> {
                        @Param("status") String status, @Param("updated_by") String updated_by, @Param("company_id") int company_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.company SET status = 'inactive',updated_by=:updated_by,updated_date=current_timestamp WHERE company_id=:company_id", nativeQuery = true)
+    @Query(value = "UPDATE cms.company SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE company_id=:company_id", nativeQuery = true)
     void deleteCompany(@Param("company_id") int company_id, @Param("updated_by") String updated_by);
 }

@@ -1833,7 +1833,7 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            resourceRepository.deleteResource(jsonInput.optInt("playlist_id"), userOnProcess);
+            playlistRepository.deletePlaylist(jsonInput.optInt("playlist_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Playlist successfully deleted");

@@ -17,13 +17,14 @@ import java.util.List;
 public interface UsersRepository extends JpaRepository<Users, Integer> {
 
     @Query(value = "SELECT * FROM cms.Users WHERE " +
-            "user_name like :user_name " +
-            "AND user_email like :user_email " +
+            "lower(user_name) like lower(:user_name) " +
+            "AND lower(user_email) like lower(:user_email) " +
             "AND status like :status " +
-            "AND user_full_name like :user_full_name " +
-            "AND created_by like :created_by " +
+            "AND status not in('deleted') " +
+            "AND lower(user_full_name) like lower(:user_full_name) " +
+            "AND lower(created_by) like lower(:created_by) " +
             "AND CAST(created_date AS VARCHAR) like :created_date " +
-            "AND updated_by like :updated_by " +
+            "AND lower(updated_by) like lower(:updated_by) " +
             "AND CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Users> getUsersList(@Param("user_name") String user_name, @Param("user_email") String user_email,
                              @Param("status") String status, @Param("user_full_name") String user_full_name, @Param("created_by") String created_by,
@@ -53,7 +54,7 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
                     @Param("updated_by") String updated_by, @Param("user_id") int user_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Users SET status = 'inactive',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)
+    @Query(value = "UPDATE cms.Users SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)
     void deleteUser(@Param("user_id") int user_id, @Param("updated_by") String updated_by);
 
     @Query(value = "SELECT * FROM cms.Users " +

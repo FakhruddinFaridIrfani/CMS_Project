@@ -15,17 +15,18 @@ import java.util.List;
 public interface ResourceRepository extends JpaRepository<Resource, Integer> {
 
     @Query(value = "SELECT * FROM cms.Resource WHERE " +
-            "resource_name like :resource_name AND " +
-            "\"type\" like :type AND " +
+            "lower(resource_name) like lower(:resource_name) AND " +
+            "lower(\"type\") like lower(:type) AND " +
             "thumbnail like :thumbnail AND " +
             "\"file\" like :file AND " +
             "CAST(duration AS VARCHAR )like :duration AND " +
             "stretch like :stretch AND " +
             "CAST(\"order\" AS VARCHAR) like :order AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Resource> getResourceList(@Param("resource_name") String resource_name, @Param("type") String type,
                                    @Param("thumbnail") String thumbnail, @Param("file") String file,
@@ -62,7 +63,7 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
                         @Param("updated_by") String updated_by, @Param("resource_id") int resource_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Resource SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Resource SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE resource_id=:resource_id", nativeQuery = true)
     void deleteResource(@Param("resource_id") int resource_id, @Param("updated_by") String updated_by);
 

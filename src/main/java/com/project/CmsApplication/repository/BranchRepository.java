@@ -15,12 +15,13 @@ import java.util.List;
 public interface BranchRepository extends JpaRepository<Branch, Integer> {
 
     @Query(value = "SELECT * FROM cms.Branch WHERE " +
-            "branch_name like :branch_name AND " +
+            "lower(branch_name) like lower(:branch_name) AND " +
             "CAST(region_id AS VARCHAR) like :region_id AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Branch> getBranchList(@Param("branch_name") String branch_name,
                                @Param("region_id") String region_id,
@@ -48,7 +49,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
                       @Param("updated_by") String updated_by, @Param("branch_id") int branch_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Branch SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Branch SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE branch_id=:branch_id", nativeQuery = true)
     void deleteBranch(@Param("branch_id") int branch_id, @Param("updated_by") String updated_by);
 

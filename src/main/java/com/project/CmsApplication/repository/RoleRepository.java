@@ -15,11 +15,12 @@ import java.util.List;
 public interface RoleRepository extends JpaRepository<Role, Integer> {
 
     @Query(value = "SELECT * FROM cms.Role WHERE " +
-            "role_name like :role_name AND " +
+            "lower(role_name) like lower(:role_name) AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Role> getRoleList(@Param("role_name") String role_name,
                            @Param("status") String status,
@@ -46,7 +47,7 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
                     @Param("updated_by") String updated_by, @Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Role SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Role SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE role_id=:role_id", nativeQuery = true)
     void deleteRole(@Param("role_id") int role_id, @Param("updated_by") String updated_by);
 

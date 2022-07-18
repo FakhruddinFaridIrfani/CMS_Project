@@ -18,9 +18,10 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
             "WHERE CAST(user_id AS VARCHAR) like :user_id " +
             "AND CAST(role_id AS VARCHAR) like :role_id " +
             "AND status like :status " +
-            "AND created_by like :created_by " +
+            "AND status not in('deleted') " +
+            "AND lower(created_by) like lower(:created_by) " +
             "AND CAST(created_date AS VARCHAR) like :created_date " +
-            "AND updated_by like :updated_by " +
+            "AND lower(updated_by) like lower(:updated_by) " +
             "AND CAST(updated_date AS VARCHAR) like :updated_date", nativeQuery = true)
     List<UserRole> getUserRoleList(@Param("user_id") String user_id,
                                    @Param("role_id") String role_id,
@@ -48,6 +49,6 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
                         @Param("updated_by") String updated_by, @Param("user_role_id") int user_role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.user_role SET status = 'inactive',updated_by=:updated_by,updated_date=current_timestamp WHERE user_role_id=:user_role_id", nativeQuery = true)
+    @Query(value = "UPDATE cms.user_role SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_role_id=:user_role_id", nativeQuery = true)
     void deleteUserRole(@Param("user_role_id") int user_role_id, @Param("updated_by") String updated_by);
 }

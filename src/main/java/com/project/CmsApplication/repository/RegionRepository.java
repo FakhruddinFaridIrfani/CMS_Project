@@ -16,12 +16,13 @@ import java.util.List;
 public interface RegionRepository extends JpaRepository<Region, Integer> {
 
     @Query(value = "SELECT * FROM cms.Region WHERE " +
-            "region_name like :region_name AND " +
+            "lower(region_name) like lower(:region_name) AND " +
             "CAST(company_id AS VARCHAR) like :company_id AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Region> getRegionList(@Param("region_name") String region_name,
                                @Param("company_id") String company_id,
@@ -49,7 +50,7 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
                       @Param("updated_by") String updated_by, @Param("region_id") int region_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Region SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Region SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE region_id=:region_id", nativeQuery = true)
     void deleteRegion(@Param("region_id") int region_id, @Param("updated_by") String updated_by);
 

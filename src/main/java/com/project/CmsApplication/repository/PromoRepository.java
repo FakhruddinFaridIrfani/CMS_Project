@@ -16,17 +16,18 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
 
     @Query(value = "SELECT * FROM cms.Promo WHERE " +
             "CAST(branch_id AS VARCHAR) like :branch_id AND " +
-            "tittle like :tittle AND " +
+            "lower(tittle) like lower(:tittle) AND " +
             "file like :file AND " +
-            "description like :description AND " +
+            "lower(description) like lower(:description) AND " +
             "popup like :popup AND " +
             "popup_description like :popup_description AND " +
             "CAST(start_date AS VARCHAR) like :start_date AND " +
             "CAST(end_date AS VARCHAR) like :end_date AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Promo> getPromoList(
             @Param("branch_id") String branch_id,
@@ -67,7 +68,7 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
                      @Param("updated_by") String updated_by, @Param("promo_id") int promo_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Promo SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Promo SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE promo_id=:promo_id", nativeQuery = true)
     void deletePromo(@Param("promo_id") int promo_id, @Param("updated_by") String updated_by);
 

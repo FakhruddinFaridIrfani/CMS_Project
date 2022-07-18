@@ -15,11 +15,12 @@ import java.util.List;
 public interface DeviceRepository extends JpaRepository<Device, Integer> {
 
     @Query(value = "SELECT * FROM cms.Device WHERE " +
-            "device_name like :device_name AND " +
+            "lower(device_name) like lower(:device_name) AND " +
             "status like :status AND " +
-            "created_by like :created_by AND " +
+            "status not in('deleted') AND " +
+            "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
-            "updated_by like :updated_by AND " +
+            "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Device> getDeviceList(@Param("device_name") String device_name,
                                @Param("status") String status,
@@ -46,7 +47,7 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
                       @Param("updated_by") String updated_by, @Param("device_id") int device_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Device SET status = 'inactive',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms.Device SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE device_id=:device_id", nativeQuery = true)
     void deleteDevice(@Param("device_id") int device_id, @Param("updated_by") String updated_by);
 
