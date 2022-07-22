@@ -58,6 +58,11 @@ public class Users {
     @Column(name = "updated_date")
     public Date updated_date;
 
+
+    @NotNull
+    @Column(name = "branch_id")
+    public int branch_id;
+
     public int getUser_id() {
         return user_id;
     }
@@ -146,4 +151,11 @@ public class Users {
         this.updated_date = updated_date;
     }
 
+    public int getBranch_id() {
+        return branch_id;
+    }
+
+    public void setBranch_id(int branch_id) {
+        this.branch_id = branch_id;
+    }
 }

@@ -37,8 +37,11 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
     @Query(value = "SELECT * FROM cms.Device WHERE device_id =:device_id", nativeQuery = true)
     List<Device> getDeviceById(@Param("device_id") int device_id);
 
-    @Query(value = "SELECT * FROM cms.Device WHERE device_name like :device_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Device WHERE lower(device_name) = lower(:device_name) AND status not in ('deleted')", nativeQuery = true)
     List<Device> getDeviceByName(@Param("device_name") String device_name);
+
+    @Query(value = "SELECT * FROM cms.Device WHERE lower(device_name) = lower(:device_name) AND device_id not in (:device_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Device> getDeviceByNameExceptId(@Param("device_name") String device_name, @Param("device_id") int device_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Device SET device_name=:device_name,status=:status," +

@@ -39,13 +39,19 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
     @Query(value = "SELECT * FROM cms.Branch WHERE branch_id =:branch_id", nativeQuery = true)
     List<Branch> getBranchById(@Param("branch_id") int branch_id);
 
-    @Query(value = "SELECT * FROM cms.Branch WHERE branch_name like :branch_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Branch WHERE region_id =:region_id AND status not in ('deleted')", nativeQuery = true)
+    List<Branch> getBranchByRegionId(@Param("region_id") int region_id);
+
+    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND status not in ('deleted') ", nativeQuery = true)
     List<Branch> getBranchByName(@Param("branch_name") String branch_name);
+
+    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND branch_id not in (:branch_id) AND status not in ('deleted') ", nativeQuery = true)
+    List<Branch> getBranchByNameExceptId(@Param("branch_name") String branch_name, @Param("branch_id") int branch_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Branch SET branch_name=:branch_name,region_id=:region_id,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE branch_id =:branch_id ", nativeQuery = true)
-    void updateBranch(@Param("branch_name") String branch_name,@Param("region_id") int region_id ,@Param("status") String status,
+    void updateBranch(@Param("branch_name") String branch_name, @Param("region_id") int region_id, @Param("status") String status,
                       @Param("updated_by") String updated_by, @Param("branch_id") int branch_id);
 
     @Modifying

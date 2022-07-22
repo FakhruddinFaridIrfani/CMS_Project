@@ -47,8 +47,20 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
     @Query(value = "SELECT * FROM cms.Playlist WHERE playlist_id =:playlist_id", nativeQuery = true)
     List<Playlist> getPlaylistById(@Param("playlist_id") int playlist_id);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE playlist_name like :playlist_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Playlist WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
+    List<Playlist> getPlaylistByBranchId(@Param("branch_id") int branch_id);
+
+    @Query(value = "SELECT * FROM cms.Playlist WHERE position_id =:position_id AND status not in ('deleted')", nativeQuery = true)
+    List<Playlist> getPlaylistByPositionId(@Param("position_id") int position_id);
+
+    @Query(value = "SELECT * FROM cms.Playlist WHERE resource_id =:resource_id AND status not in ('deleted')", nativeQuery = true)
+    List<Playlist> getPlaylistByResourceId(@Param("resource_id") int resource_id);
+
+    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND status not in ('deleted')", nativeQuery = true)
     List<Playlist> getPlaylistByName(@Param("playlist_name") String playlist_name);
+
+    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND playlist_id not in (:playlist_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Playlist> getPlaylistByNameExceptId(@Param("playlist_name") String playlist_name, @Param("playlist_id") int playlist_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Playlist SET playlist_name=:playlist_name,branch_id=:branch_id,position_id=:position_id,resource_id=:resource_id," +

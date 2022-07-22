@@ -1,16 +1,32 @@
 package com.project.CmsApplication.Services;
 
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import com.project.CmsApplication.Utility.DateFormatter;
+import com.project.CmsApplication.controller.BranchController;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
-import javafx.geometry.Pos;
-import org.apache.catalina.User;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+
+import org.apache.commons.io.IOUtils;
+
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -53,6 +69,26 @@ public class CmsServices {
     @Autowired
     UserRoleRepository userRoleRepository;
 
+    Logger logger = LoggerFactory.getLogger(CmsServices.class);
+
+    @Value("${attachment.path.promo}")
+    private String attachmentPathPromo;
+
+    @Value("${attachment.path.playlist}")
+    private String attachmentPathPlaylist;
+
+    @Value("${attachment.path.resource}")
+    private String attachmentPathResource;
+
+    @Value("${sftp.user.name}")
+    private String sftpUser;
+
+    @Value("${sftp.user.password}")
+    private String sftpPassword;
+
+    @Value("${sftp.url}")
+    private String sftpUrl;
+
 
     //ROLE SECTION
     public BaseResponse<String> addNewRole(String input) throws Exception {
@@ -68,6 +104,14 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            //Existing Role Name check
+            List<Role> roleNameCheckResult = roleRepository.getRoleByName(jsonInput.optString("role_name"));
+            if (roleNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Role name already exist / used");
+                return response;
+            }
             roleRepository.save(jsonInput.optString("role_name"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -143,6 +187,14 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            //Existing Role Name check
+            List<Role> roleNameCheckResult = roleRepository.getRoleByNameExceptId(jsonInput.optString("role_name"), jsonInput.optInt("role_id"));
+            if (roleNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Role name already exist / used");
+                return response;
+            }
             roleRepository.updateRole(jsonInput.optString("role_name"), jsonInput.optString("status"),
                     userOnProcess, jsonInput.optInt("role_id"));
             response.setStatus("2000");
@@ -170,6 +222,14 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            List<UserRole> usedRoleOnUser = userRoleRepository.getUserRoleByRoleId(jsonInput.optInt("role_id"));
+            if (usedRoleOnUser.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("The role still used by " + usedRoleOnUser.size() + " user(s)");
+                return response;
+            }
+
             roleRepository.deleteRole(jsonInput.optInt("role_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -197,7 +257,7 @@ public class CmsServices {
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-
+            int branch_id;
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("0");
@@ -216,10 +276,11 @@ public class CmsServices {
                 response.setMessage("User name already exist / used");
                 return response;
             }
+            branch_id = jsonInput.optInt("branch_id");
 
             usersRepository.save(jsonInput.optString("user_name"),
                     jsonInput.optString("user_password"), jsonInput.optString("user_email"),
-                    jsonInput.optString("user_full_name"), userOnProcess, userToken);
+                    jsonInput.optString("user_full_name"), userOnProcess, userToken, branch_id);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User successfully Added");
@@ -238,6 +299,7 @@ public class CmsServices {
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
+        String branch_id;
         String user_name;
         String user_email;
         String user_full_name;
@@ -267,9 +329,13 @@ public class CmsServices {
             if (status.isEmpty()) {
                 status = "%%";
             }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date);
+            List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date, branch_id);
             for (int i = 0; i < getUserResult.size(); i++) {
                 getUserResult.get(i).setUser_password("null");
             }
@@ -297,6 +363,13 @@ public class CmsServices {
                 response.setStatus("0");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            List<Users> userNameCheckResult = usersRepository.getUsersByNameExceptId(jsonInput.optString("user_name"), jsonInput.optInt("user_id"));
+            if (userNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("User name already exist / used");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
@@ -333,6 +406,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             usersRepository.deleteUser(jsonInput.optInt("user_id"), userOnProcess);
+            userRoleRepository.deleteUserRoleByUserId(jsonInput.optInt("user_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User successfully deleted");
@@ -398,6 +472,33 @@ public class CmsServices {
         }
         return response;
     }
+
+    public BaseResponse<String> changeUsersPassword(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+        List<Users> dataLoginUser;
+        List<Map> user_role = new ArrayList<>();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            dataLoginUser = usersRepository.loginUser(jsonInput.optString("user_name"), jsonInput.optString("user_email"), jsonInput.optString("user_password"));
+            if (dataLoginUser.size() == 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Wrong current password");
+                return response;
+            }
+            usersRepository.changeUsersPassword(jsonInput.optInt("user_id"), jsonInput.optString("new_user_password"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Password Changed !!");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
 
     //USER-ROLE SECTION
     public BaseResponse<String> addNewUserRole(String input) throws Exception, SQLException {
@@ -531,7 +632,7 @@ public class CmsServices {
             userRoleRepository.deleteUserRole(jsonInput.optInt("user_role_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
-            response.setMessage("User successfully deleted");
+            response.setMessage("User-Role successfully deleted");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -563,6 +664,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //company name  check
+            List<Company> companyNameCheckResult = companyRepository.getCompanyByName(jsonInput.optString("company_name"));
+            if (companyNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Company name already exist / used");
+                return response;
+            }
             companyRepository.save(jsonInput.optString("company_name"), jsonInput.optString("company_address"),
                     jsonInput.optString("company_phone"), jsonInput.optString("company_email"), userOnProcess);
             response.setStatus("2000");
@@ -645,7 +755,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phen"),
+            //company name  check
+            List<Company> companyNameCheckResult = companyRepository.getCompanyByNameExceptId(jsonInput.optString("company_name"), jsonInput.optInt("company_id"));
+            if (companyNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Company name already exist / used");
+                return response;
+            }
+            companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phone"),
                     jsonInput.optString("company_email"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("company_id"));
             response.setStatus("2000");
             response.setSuccess(true);
@@ -674,6 +792,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check region of company
+            List<Region> usedCompanyOnRegion = regionRepository.getRegionByCompanyId(jsonInput.optInt("company_id"));
+            if (usedCompanyOnRegion.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("The company still has " + usedCompanyOnRegion.size() + " region(s)");
+                return response;
+            }
+
             companyRepository.deleteCompany(jsonInput.optInt("company_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -712,6 +840,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Region name  check
+            List<Region> regionNameCheckResult = regionRepository.getRegionByName(jsonInput.optString("region_name"));
+            if (regionNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Region name already exist / used");
+                return response;
+            }
             regionRepository.save(jsonInput.optInt("company_id"), jsonInput.optString("region_name"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -754,8 +891,8 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
             region_name = "%" + jsonInput.optString("region_name") + "%";
-            company_id = "%" + jsonInput.optInt("company_id") + "%";
-            if (company_id.compareToIgnoreCase("%null%") == 0 || company_id.compareToIgnoreCase("%0%") == 0) {
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
                 company_id = "%%";
             }
             status = jsonInput.optString("status");
@@ -803,7 +940,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("region_id"));
+            //Region name  check
+            List<Region> regionNameCheckResult = regionRepository.getRegionByNameExceptId(jsonInput.optString("region_name"), jsonInput.optInt("region_id"));
+            if (regionNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Region name already exist / used");
+                return response;
+            }
+            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"),
+                    userOnProcess, jsonInput.optInt("region_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Region successfully Updated");
@@ -831,6 +977,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check branch of region
+            List<Branch> usedRegionOnBranch = branchRepository.getBranchByRegionId(jsonInput.optInt("region_id"));
+            if (usedRegionOnBranch.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("The Region still has " + usedRegionOnBranch.size() + " branch(es)");
+                return response;
+            }
             regionRepository.deleteRegion(jsonInput.optInt("region_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -869,6 +1024,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Branch name  check
+            List<Branch> branchNameCheckResult = branchRepository.getBranchByName(jsonInput.optString("branch_name"));
+            if (branchNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Branch name already exist / used");
+                return response;
+            }
+
             branchRepository.save(jsonInput.optInt("region_id"), jsonInput.optString("branch_name"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -963,7 +1128,18 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("branch_id"));
+
+            //Branch name  check
+            List<Branch> branchNameCheckResult = branchRepository.getBranchByNameExceptId(jsonInput.optString("branch_name"), jsonInput.optInt("branch_id"));
+            if (branchNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Branch name already exist / used");
+                return response;
+            }
+
+            branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"),
+                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("branch_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Branch successfully Updated");
@@ -991,6 +1167,27 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check promo of branch
+            List<Promo> usedBranchOnPromo = promoRepository.getPromoByBranchId(jsonInput.optInt("branch_id"));
+            if (usedBranchOnPromo.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("The Branch still has " + usedBranchOnPromo.size() + " promo(s)");
+                return response;
+            }
+
+            //Check playlist of branch
+            List<Playlist> usedBranchOnPlaylist = playlistRepository.getPlaylistByBranchId(jsonInput.optInt("branch_id"));
+            if (usedBranchOnPlaylist.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("The Branch still has " + usedBranchOnPlaylist.size() + " playlist(s)");
+                return response;
+            }
+
+
+
             branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1029,7 +1226,21 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("description"),
+
+            //Promo tittle  check
+            List<Promo> promoTittleCheckResult = promoRepository.getPromoByTittle(jsonInput.optString("tittle"));
+            if (promoTittleCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Promo Tittle already exist / used");
+                return response;
+            }
+
+            String file = "";
+            if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
+                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+            }
+            promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1141,7 +1352,19 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), jsonInput.optString("file"), jsonInput.optString("description"),
+            //Promo tittle  check
+            List<Promo> promoTittleCheckResult = promoRepository.getPromoByTittleExceptId(jsonInput.optString("tittle"), jsonInput.optInt("promo_id"));
+            if (promoTittleCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Promo Tittle already exist / used");
+                return response;
+            }
+            String file = jsonInput.optString("file");
+            if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
+                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+            }
+            promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
                     jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"));
             response.setStatus("2000");
@@ -1204,6 +1427,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Device name  check
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(jsonInput.optString("device_name"));
+            if (deviceNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Device name already exist / used");
+                return response;
+            }
             deviceRepository.save(jsonInput.optString("device_name"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1280,6 +1512,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Device name  check
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(jsonInput.optString("device_name"), jsonInput.optInt("device_id"));
+            if (deviceNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Device name already exist / used");
+                return response;
+            }
+
             deviceRepository.updateDevice(jsonInput.optString("device_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("device_id"));
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1308,6 +1550,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check position of device
+            List<Position> devicePosition = positionRepository.getPositionByDeviceId(jsonInput.optInt("device_id"));
+            if (devicePosition.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Device still has " + devicePosition.size() + " position(s)");
+                return response;
+            }
             deviceRepository.deleteDevice(jsonInput.optInt("device_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1480,6 +1731,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check playlist use this position
+            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByPositionId(jsonInput.optInt("position_id"));
+            if (usedPositionOnPlaylist.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Position still used on " + usedPositionOnPlaylist.size() + " playlist(s)");
+                return response;
+            }
+
             positionRepository.deletePosition(jsonInput.optInt("position_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1513,6 +1774,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Resource name  check
+            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(jsonInput.optString("resource_name"));
+            if (resourceNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Resource name already exist / used");
+                return response;
+            }
             resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
                     jsonInput.optString("file"), jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess);
             response.setStatus("2000");
@@ -1609,6 +1879,14 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            //Resource name  check
+            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByNameExceptId(jsonInput.optString("resource_name"), jsonInput.optInt("resource_id"));
+            if (resourceNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Resource name already exist / used");
+                return response;
+            }
             resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), jsonInput.optString("file"),
                     jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
             response.setStatus("2000");
@@ -1638,6 +1916,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Check playlist use this resource
+            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByResourceId(jsonInput.optInt("resource_id"));
+            if (usedPositionOnPlaylist.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Resource still used on " + usedPositionOnPlaylist.size() + " playlist(s)");
+                return response;
+            }
+
             resourceRepository.deleteResource(jsonInput.optInt("resource_id"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1676,6 +1964,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Playlist name  check
+            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(jsonInput.optString("playlist_name"));
+            if (playlistNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Playlist name already exist / used");
+                return response;
+            }
+
             int currentSort = 1;
             List<Playlist> latestSort = playlistRepository.getSortOrder(jsonInput.optInt("position_id"), jsonInput.optInt("branch_id"));
             if (latestSort.size() > 0) {
@@ -1803,6 +2101,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+            //Playlist name  check
+            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByNameExceptId(jsonInput.optString("playlist_name"), jsonInput.optInt("playlist_id"));
+            if (playlistNameCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Playlist name already exist / used");
+                return response;
+            }
+
             playlistRepository.updatePlaylist(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("position_id"),
                     jsonInput.optInt("resource_id"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), jsonInput.optString("status"),
                     userOnProcess, jsonInput.optInt("playlist_id"));
@@ -1879,5 +2187,111 @@ public class CmsServices {
         return result;
     }
 
+
+    //FILE SECTION
+    public BaseResponse<String> addFile(String file_name, String file_content, String folder) {
+        BaseResponse response = new BaseResponse();
+        Session session = null;
+        ChannelSftp channel = null;
+        try {
+            UUID uuid = UUID.randomUUID();
+            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+            session.setPassword(sftpPassword);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect();
+
+            String path = "";
+            if (folder.compareToIgnoreCase("promo") == 0) {
+                path = attachmentPathPromo;
+            } else if (folder.compareToIgnoreCase("playlist") == 0) {
+                path = attachmentPathPlaylist;
+            } else if (folder.compareToIgnoreCase("resource") == 0) {
+                path = attachmentPathResource;
+            } else {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("unknown folder");
+                return response;
+            }
+            byte[] b = Base64.getMimeDecoder().decode(file_content);
+            InputStream stream = new ByteArrayInputStream(b);
+            channel.put(stream, path + uuid + "_" + file_name, 0);
+
+            response.setData(uuid + "_" + file_name);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("File successfully Added");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            logger.info(new Date().getTime() + e.getMessage());
+        } finally {
+            if (session.isConnected() || session != null) {
+                session.disconnect();
+            }
+            if (channel.isConnected() || channel != null) {
+                channel.disconnect();
+            }
+        }
+        return response;
+    }
+
+    public BaseResponse<Map<String, Object>> getFile(String file_name, String folder) {
+        BaseResponse response = new BaseResponse();
+        Session session = null;
+        ChannelSftp channel = null;
+        Map<String, Object> result = new HashMap<>();
+        try {
+            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+            session.setPassword(sftpPassword);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect();
+
+            String path = "";
+            if (folder.compareToIgnoreCase("promo") == 0) {
+                path = attachmentPathPromo;
+            } else if (folder.compareToIgnoreCase("playlist") == 0) {
+                path = attachmentPathPlaylist;
+            } else if (folder.compareToIgnoreCase("resource") == 0) {
+                path = attachmentPathResource;
+            } else {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("unknown folder");
+                return response;
+            }
+
+            InputStream inputStream = channel.get(path + file_name);
+            logger.info("file path : " + path + file_name);
+            byte[] bytes = IOUtils.toByteArray(inputStream);
+            String base64 = Base64.getEncoder().encodeToString(bytes);
+
+            result.put("file_byte", new String(bytes));
+            result.put("file_base64", base64);
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("Get File success");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            logger.info(new Date().getTime() + e.getMessage());
+        } finally {
+            if (session.isConnected() || session != null) {
+                session.disconnect();
+            }
+            if (channel.isConnected() || channel != null) {
+                channel.disconnect();
+            }
+        }
+        return response;
+    }
 
 }

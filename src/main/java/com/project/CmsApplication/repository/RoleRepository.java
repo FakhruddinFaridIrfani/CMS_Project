@@ -37,8 +37,11 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
     @Query(value = "SELECT * FROM cms.Role WHERE role_id =:role_id", nativeQuery = true)
     List<Role> getRoleById(@Param("role_id") int role_id);
 
-    @Query(value = "SELECT * FROM cms.Role WHERE role_name like :role_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Role WHERE lower(role_name) like lower(:role_name) AND status not in ('deleted')", nativeQuery = true)
     List<Role> getRoleByName(@Param("role_name") String role_name);
+
+    @Query(value = "SELECT * FROM cms.Role WHERE lower(role_name) like lower(:role_name) AND role_id not in (:role_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Role> getRoleByNameExceptId(@Param("role_name") String role_name, @Param("role_id") int role_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Role SET role_name=:role_name,status=:status," +

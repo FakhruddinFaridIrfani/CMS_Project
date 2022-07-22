@@ -53,6 +53,9 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
     @Query(value = "SELECT * FROM cms.Position WHERE position_id =:position_id", nativeQuery = true)
     List<Position> getPositionById(@Param("position_id") int position_id);
 
+    @Query(value = "SELECT * FROM cms.Position WHERE device_id =:device_id AND status not in ('deleted')", nativeQuery = true)
+    List<Position> getPositionByDeviceId(@Param("device_id") int device_id);
+
     @Query(value = "SELECT * FROM cms.Position WHERE position_name like :position_name", nativeQuery = true)
     List<Position> getPositionByName(@Param("position_name") String position_name);
 

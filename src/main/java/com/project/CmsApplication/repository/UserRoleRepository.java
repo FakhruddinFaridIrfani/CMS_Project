@@ -36,8 +36,11 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
             "VALUES('active',:user_id,:role_id,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
     void save(@Param("user_id") int user_id, @Param("role_id") int role_id, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status ='active'", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status not int ('deleted')", nativeQuery = true)
     List<UserRole> getUserRoleByUserId(@Param("user_id") int user_id);
+
+    @Query(value = "SELECT * FROM cms.user_role WHERE role_id =:role_id and status not in ('deleted')", nativeQuery = true)
+    List<UserRole> getUserRoleByRoleId(@Param("role_id") int role_id);
 
     @Query(value = "SELECT * FROM cms.user_role WHERE user_role_name like :user_role_name", nativeQuery = true)
     List<UserRole> getUserRoleByName(@Param("user_role_name") String user_role_name);
@@ -51,4 +54,8 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
     @Modifying
     @Query(value = "UPDATE cms.user_role SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_role_id=:user_role_id", nativeQuery = true)
     void deleteUserRole(@Param("user_role_id") int user_role_id, @Param("updated_by") String updated_by);
+
+    @Modifying
+    @Query(value = "UPDATE cms.user_role SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)
+    void deleteUserRoleByUserId(@Param("user_id") int user_id, @Param("updated_by") String updated_by);
 }

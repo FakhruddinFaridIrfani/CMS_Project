@@ -110,4 +110,10 @@ public class UsersController {
         logger.info(new Date().getTime() + " : loginUsers - ");
         return cmsServices.loginUser(input);
     }
+
+    @PostMapping("/changeUserPassword")
+    public BaseResponse<String> changeUserPassword(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : loginUsers - ");
+        return cmsServices.changeUsersPassword(input);
+    }
 }

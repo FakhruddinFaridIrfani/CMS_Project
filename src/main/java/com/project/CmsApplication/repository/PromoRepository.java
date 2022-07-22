@@ -56,6 +56,15 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
     @Query(value = "SELECT * FROM cms.Promo WHERE promo_id =:promo_id", nativeQuery = true)
     List<Promo> getPromoById(@Param("promo_id") int promo_id);
 
+    @Query(value = "SELECT * FROM cms.Promo WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
+    List<Promo> getPromoByBranchId(@Param("branch_id") int branch_id);
+
+    @Query(value = "SELECT * FROM cms.Promo WHERE lower(tittle) =lower(:tittle) AND status not in ('deleted')", nativeQuery = true)
+    List<Promo> getPromoByTittle(@Param("tittle") String tittle);
+
+    @Query(value = "SELECT * FROM cms.Promo WHERE lower(tittle) =lower(:tittle) AND promo_id not in (:promo_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Promo> getPromoByTittleExceptId(@Param("tittle") String tittle, @Param("promo_id") int promo_id);
+
 
     @Modifying
     @Query(value = "UPDATE cms.Promo SET branch_id=:branch_id,tittle=:tittle,file=:file,description=:description,popup=:popup,popup_description=:popup_description," +

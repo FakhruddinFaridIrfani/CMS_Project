@@ -17,7 +17,7 @@ public interface CompanyRepository extends JpaRepository<Company, Integer> {
 
     @Query(value = "SELECT * FROM cms.company WHERE " +
             "lower(company_name) like lower(:company_name) " +
-            "AND lower((company_address) like lower(:company_address) " +
+            "AND lower(company_address) like lower(:company_address) " +
             "AND company_phone like :company_phone " +
             "AND lower(company_email) like lower(:company_email) " +
             "AND status like :status " +
@@ -41,8 +41,11 @@ public interface CompanyRepository extends JpaRepository<Company, Integer> {
     @Query(value = "SELECT * FROM cms.company WHERE company_id =:company_id", nativeQuery = true)
     List<Company> getCompanyById(@Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.company WHERE company_name = :company_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.company WHERE lower(company_name) = lower(:company_name) AND status not in ('deleted')", nativeQuery = true)
     List<Company> getCompanyByName(@Param("company_name") String company_name);
+
+    @Query(value = "SELECT * FROM cms.company WHERE lower(company_name) = lower(:company_name) AND company_id not in (:company_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Company> getCompanyByNameExceptId(@Param("company_name") String company_name,@Param("company_id")int company_id);
 
     @Modifying
     @Query(value = "UPDATE cms.company SET company_name=:company_name,company_address=:company_address,company_phone=:company_phone ,company_email=:company_email," +

@@ -49,8 +49,11 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
     @Query(value = "SELECT * FROM cms.Resource WHERE resource_id =:resource_id", nativeQuery = true)
     List<Resource> getResourceById(@Param("resource_id") int resource_id);
 
-    @Query(value = "SELECT * FROM cms.Resource WHERE resource_name like :resource_name", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Resource WHERE lower(resource_name) = lower(:resource_name) AND status not in ('deleted')", nativeQuery = true)
     List<Resource> getResourceByName(@Param("resource_name") String resource_name);
+
+    @Query(value = "SELECT * FROM cms.Resource WHERE lower(resource_name) = lower(:resource_name) AND resource_id not in (:resource_id) AND status not in ('deleted')", nativeQuery = true)
+    List<Resource> getResourceByNameExceptId(@Param("resource_name") String resource_name, @Param("resource_id") int resource_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Resource SET resource_name=:resource_name,\"type\" =:type,thumbnail = :thumbnail,\"file\"=:file," +
