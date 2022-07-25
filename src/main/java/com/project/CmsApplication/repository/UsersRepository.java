@@ -43,14 +43,14 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     List<Users> getUsersById(@Param("user_id") int user_id);
 
 
-    @Query(value = "SELECT * FROM cms.Users WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Users WHERE branch_id =:branch_id AND status not in('deleted')", nativeQuery = true)
     List<Users> getUsersByBranchId(@Param("branch_id") int branch_id);
 
 
-    @Query(value = "SELECT * FROM cms.Users WHERE lower(user_name) = lower(:user_name) AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Users WHERE lower(user_name) = lower(:user_name) AND status not in('deleted')", nativeQuery = true)
     List<Users> getUsersByName(@Param("user_name") String user_name);
 
-    @Query(value = "SELECT * FROM cms.Users WHERE lower(user_name) = lower(:user_name) AND user_id not in (:user_id) AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Users WHERE lower(user_name) = lower(:user_name) AND user_id not in(:user_id) AND status not in('deleted')", nativeQuery = true)
     List<Users> getUsersByNameExceptId(@Param("user_name") String user_name, @Param("user_id") int user_id);
 
     @Query(value = "SELECT * FROM cms.Users WHERE user_token =:user_token", nativeQuery = true)
@@ -58,10 +58,10 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
 
     @Modifying
     @Query(value = "UPDATE cms.Users SET user_name=:user_name,user_email=:user_email," +
-            "status=:status,user_full_name=:user_full_name,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
+            "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
     void updateUser(@Param("user_name") String user_name, @Param("user_email") String user_email,
                     @Param("status") String status, @Param("user_full_name") String user_full_name,
-                    @Param("updated_by") String updated_by, @Param("user_id") int user_id);
+                    @Param("updated_by") String updated_by, @Param("branch_id") int branch_id, @Param("user_id") int user_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Users SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)

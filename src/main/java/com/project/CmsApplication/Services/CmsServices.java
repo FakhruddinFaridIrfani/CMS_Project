@@ -9,10 +9,12 @@ import com.project.CmsApplication.controller.BranchController;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,11 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -68,6 +75,10 @@ public class CmsServices {
 
     @Autowired
     UserRoleRepository userRoleRepository;
+
+    @Autowired
+    @Qualifier("entityManagerFactory")
+    private EntityManager entityManager;
 
     Logger logger = LoggerFactory.getLogger(CmsServices.class);
 
@@ -374,8 +385,8 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             usersRepository.updateUser(jsonInput.optString("user_name"), jsonInput.optString("user_email"),
-                    jsonInput.optString("user_status"), jsonInput.optString("user_full_name"),
-                    userOnProcess, jsonInput.optInt("user_id"));
+                    jsonInput.optString("status"), jsonInput.optString("user_full_name"),
+                    userOnProcess, jsonInput.optInt("branch_id"), jsonInput.optInt("user_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("User successfully Updated");
@@ -1056,6 +1067,7 @@ public class CmsServices {
         String updated_date = "%%";
         String branch_name;
         String region_id;
+        String branch_id;
         String status;
         String created_by;
         String updated_by;
@@ -1076,9 +1088,14 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
             branch_name = "%" + jsonInput.optString("branch_name") + "%";
-            region_id = "%" + jsonInput.optInt("region_id") + "%";
-            if (region_id.compareToIgnoreCase("%null%") == 0 || region_id.compareToIgnoreCase("%0%") == 0) {
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
                 region_id = "%%";
+            }
+
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
             }
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
@@ -1086,7 +1103,7 @@ public class CmsServices {
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Branch> getBranchResult = branchRepository.getBranchList(branch_name, region_id, status, created_by, created_date, updated_by, updated_date);
+            List<Branch> getBranchResult = branchRepository.getBranchList(branch_name, region_id, branch_id, status, created_by, created_date, updated_by, updated_date);
 
             for (int i = 0; i < getBranchResult.size(); i++) {
                 Map resultMap = new HashMap();
@@ -1185,7 +1202,6 @@ public class CmsServices {
                 response.setMessage("The Branch still has " + usedBranchOnPlaylist.size() + " playlist(s)");
                 return response;
             }
-
 
 
             branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
@@ -1783,8 +1799,12 @@ public class CmsServices {
                 response.setMessage("Resource name already exist / used");
                 return response;
             }
+            String file = "";
+            if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
+                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+            }
             resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
-                    jsonInput.optString("file"), jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess);
+                    file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Resource successfully Added");
@@ -1887,7 +1907,11 @@ public class CmsServices {
                 response.setMessage("Resource name already exist / used");
                 return response;
             }
-            resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), jsonInput.optString("file"),
+            String file = jsonInput.optString("file");
+            if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
+                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+            }
+            resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), file,
                     jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
             response.setStatus("2000");
             response.setSuccess(true);
@@ -2271,7 +2295,7 @@ public class CmsServices {
             byte[] bytes = IOUtils.toByteArray(inputStream);
             String base64 = Base64.getEncoder().encodeToString(bytes);
 
-            result.put("file_byte", new String(bytes));
+            result.put("file_byte", "-");
             result.put("file_base64", base64);
 
             response.setData(result);
@@ -2293,5 +2317,27 @@ public class CmsServices {
         }
         return response;
     }
+
+//    public BaseResponse<List<Users>> queryBuilder(String input) throws JSONException {
+//        BaseResponse response = new BaseResponse();
+//        JSONObject jsonObject = new JSONObject(input);
+//        List<Users> result;
+//        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+//        CriteriaQuery<Users> criteriaQuery = criteriaBuilder.createQuery(Users.class);
+//        Root<Users> from = criteriaQuery.from(Users.class);
+//        CriteriaQuery<Users> select = criteriaQuery.select(from);
+//        TypedQuery<Users> typedQuery = entityManager.createQuery(select);
+////        logger.info("typedQuery : "+ typedQuery.unwrap(org.hibernate.Query.class).getQueryString());
+//
+//        result = typedQuery.getResultList();
+//        for (Users u : result) {
+//            u.setUser_password("");
+//        }
+//        logger.info(result.toString());
+//        response.setData(result);
+//
+//
+//        return response;
+//    }
 
 }

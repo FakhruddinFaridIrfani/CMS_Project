@@ -16,6 +16,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
 
     @Query(value = "SELECT * FROM cms.Branch WHERE " +
             "lower(branch_name) like lower(:branch_name) AND " +
+            "CAST(branch_id AS VARCHAR) like :branch_id AND " +
             "CAST(region_id AS VARCHAR) like :region_id AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
@@ -25,6 +26,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Branch> getBranchList(@Param("branch_name") String branch_name,
                                @Param("region_id") String region_id,
+                               @Param("branch_id") String branch_id,
                                @Param("status") String status,
                                @Param("created_by") String created_by,
                                @Param("created_date") String created_date,

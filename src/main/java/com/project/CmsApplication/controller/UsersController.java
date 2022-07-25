@@ -107,13 +107,13 @@ public class UsersController {
 
     @PostMapping("/loginUsers")
     public BaseResponse<Map<String, Object>> loginUser(@RequestBody String input) throws Exception, SQLException, ParseException {
-        logger.info(new Date().getTime() + " : loginUsers - ");
+        logger.info(new Date().getTime() + " : loginUsers - "+ new JSONObject(input).optString("user_name"));
         return cmsServices.loginUser(input);
     }
 
     @PostMapping("/changeUserPassword")
     public BaseResponse<String> changeUserPassword(@RequestBody String input) throws Exception, SQLException, ParseException {
-        logger.info(new Date().getTime() + " : loginUsers - ");
+        logger.info(new Date().getTime() + " : Change user Password for - " + new JSONObject(input).optString("user_name"));
         return cmsServices.changeUsersPassword(input);
     }
 }

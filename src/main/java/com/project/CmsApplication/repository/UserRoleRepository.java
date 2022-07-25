@@ -36,7 +36,7 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Integer> {
             "VALUES('active',:user_id,:role_id,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
     void save(@Param("user_id") int user_id, @Param("role_id") int role_id, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status not int ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.user_role WHERE user_id =:user_id and status not in ('deleted')", nativeQuery = true)
     List<UserRole> getUserRoleByUserId(@Param("user_id") int user_id);
 
     @Query(value = "SELECT * FROM cms.user_role WHERE role_id =:role_id and status not in ('deleted')", nativeQuery = true)
