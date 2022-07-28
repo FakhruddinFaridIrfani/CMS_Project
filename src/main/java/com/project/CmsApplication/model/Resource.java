@@ -52,6 +52,9 @@ public class Resource {
     @Column(name = "order")
     private String order;
 
+    @Column(name = "url_resource")
+    private String url_resource;
+
 
     @NotNull
     @Column(name = "created_by")
@@ -177,6 +180,14 @@ public class Resource {
         this.updated_date = updated_date;
     }
 
+    public String getUrl_resource() {
+        return url_resource;
+    }
+
+    public void setUrl_resource(String url_resource) {
+        this.url_resource = url_resource;
+    }
+
     @Override
     public String toString() {
         return "Resource{" +
@@ -189,6 +200,7 @@ public class Resource {
                 ", status='" + status + '\'' +
                 ", stretch='" + stretch + '\'' +
                 ", order='" + order + '\'' +
+                ", url_resource='" + url_resource + '\'' +
                 ", created_by='" + created_by + '\'' +
                 ", created_date=" + created_date +
                 ", updated_by='" + updated_by + '\'' +

@@ -1257,7 +1257,7 @@ public class CmsServices {
                 file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
             }
             promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
-                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
+                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess,jsonInput.optString("thumbnail"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Promo successfully Added");
@@ -1382,7 +1382,7 @@ public class CmsServices {
             }
             promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
-                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"));
+                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"),jsonInput.optString("thumbnail"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Promo successfully Updated");
@@ -1804,7 +1804,7 @@ public class CmsServices {
                 file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
             }
             resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
-                    file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess);
+                    file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), userOnProcess,jsonInput.optString("url_resource"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Resource successfully Added");
@@ -1912,7 +1912,7 @@ public class CmsServices {
                 file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
             }
             resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), file,
-                    jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"));
+                    jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optInt("order"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"),jsonInput.optString("url_resource"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Resource successfully Updated");

@@ -38,13 +38,13 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
                                    @Param("updated_date") String updated_at);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Resource(status,resource_name,\"type\",thumbnail,\"file\",duration,stretch,\"order\",created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:order,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+    @Query(value = "INSERT INTO cms.Resource(status,resource_name,\"type\",thumbnail,\"file\",duration,stretch,\"order\",created_by,created_date,updated_by,updated_date,url_resource) " +
+            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:order,:created_by,current_timestamp,:created_by,current_timestamp,url_resource)", nativeQuery = true)
     void save(@Param("resource_name") String resource_name, @Param("type") String type,
               @Param("thumbnail") String thumbnail, @Param("file") String file,
               @Param("duration") int duration, @Param("stretch") String stretch,
               @Param("order") int order,
-              @Param("created_by") String created_by);
+              @Param("created_by") String created_by,@Param("url_resource")String url_resource);
 
     @Query(value = "SELECT * FROM cms.Resource WHERE resource_id =:resource_id", nativeQuery = true)
     List<Resource> getResourceById(@Param("resource_id") int resource_id);
@@ -58,12 +58,12 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
     @Modifying
     @Query(value = "UPDATE cms.Resource SET resource_name=:resource_name,\"type\" =:type,thumbnail = :thumbnail,\"file\"=:file," +
             "duration=:duration,stretch=:stretch,\"order\"=:order,status=:status," +
-            "updated_by=:updated_by,updated_date=current_timestamp WHERE resource_id =:resource_id ", nativeQuery = true)
+            "updated_by=:updated_by,updated_date=current_timestamp,url_resource=:url_resource WHERE resource_id =:resource_id ", nativeQuery = true)
     void updateResource(@Param("resource_name") String resource_name, @Param("type") String type,
                         @Param("thumbnail") String thumbnail, @Param("file") String file,
                         @Param("duration") int duration, @Param("stretch") String stretch,
                         @Param("order") int order, @Param("status") String status,
-                        @Param("updated_by") String updated_by, @Param("resource_id") int resource_id);
+                        @Param("updated_by") String updated_by, @Param("resource_id") int resource_id,@Param("url_resource")String url_resource);
 
     @Modifying
     @Query(value = "UPDATE cms.Resource SET status = 'deleted',updated_by=:updated_by," +

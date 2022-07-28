@@ -28,6 +28,9 @@ public class Promo {
     @Column(name = "file")
     private String file;
 
+    @Column(name = "thumbnail")
+    private String thumbnail;
+
     @NotNull
     @Column(name = "description")
     private String description;
@@ -189,6 +192,14 @@ public class Promo {
         this.updated_date = updated_date;
     }
 
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
     @Override
     public String toString() {
         return "Promo{" +
@@ -196,6 +207,7 @@ public class Promo {
                 ", branch_id=" + branch_id +
                 ", tittle='" + tittle + '\'' +
                 ", file='" + file + '\'' +
+                ", thumbnail='" + thumbnail + '\'' +
                 ", description='" + description + '\'' +
                 ", popup='" + popup + '\'' +
                 ", popup_description='" + popup_description + '\'' +
