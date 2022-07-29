@@ -2,7 +2,10 @@ package com.project.CmsApplication.controller;
 
 import com.project.CmsApplication.Services.CmsServices;
 import com.project.CmsApplication.model.BaseResponse;
+import com.project.CmsApplication.model.Configuration;
 import com.project.CmsApplication.model.Users;
+import com.project.CmsApplication.repository.ConfigurationRepository;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +25,9 @@ public class UtilityController {
 
     @Autowired
     CmsServices cmsServices;
+
+    @Autowired
+    ConfigurationRepository configurationRepository;
 
     @GetMapping("/testService")
     public BaseResponse<String> testService() throws Exception {
@@ -47,6 +53,57 @@ public class UtilityController {
         logger.info(new Date().getTime() + " : Get File");
         JSONObject jsonObject = new JSONObject(input);
         return cmsServices.getFile(jsonObject.optString("file_name"), jsonObject.optString("folder"));
+    }
+
+    @PostMapping("/getConfig")
+    public BaseResponse<List<Configuration>> getConfig() {
+        BaseResponse<List<Configuration>> result = new BaseResponse<>();
+        result.setData(configurationRepository.findAll());
+        result.setStatus("2000");
+        result.setSuccess(true);
+        result.setMessage("Config listed");
+        return result;
+    }
+
+    @PostMapping("/addConfig")
+    public BaseResponse<List<Configuration>> addConfig(@RequestBody String input) {
+        BaseResponse<List<Configuration>> result = new BaseResponse<>();
+        JSONObject jsonInput = null;
+        try {
+            jsonInput = new JSONObject(input);
+        } catch (JSONException e) {
+            result.setStatus("0");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        }
+        if (jsonInput != null && !jsonInput.optString("configuration_name").equals("") && !jsonInput.optString("configuration_value").equals("")) {
+            configurationRepository.save(jsonInput.optString("configuration_name"), jsonInput.optString("configuration_value"));
+            result.setStatus("2000");
+            result.setSuccess(true);
+            result.setMessage("Config added");
+        }
+        return result;
+    }
+
+    @PostMapping("/updateConfig")
+    public BaseResponse<List<Configuration>> updateConfig(@RequestBody String input) {
+        BaseResponse<List<Configuration>> result = new BaseResponse<>();
+        JSONObject jsonInput = null;
+        try {
+            jsonInput = new JSONObject(input);
+        } catch (JSONException e) {
+            result.setStatus("0");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+            return result;
+        }
+        if (jsonInput != null && !jsonInput.optString("configuration_value").equals("") && jsonInput.optInt("configuration_id") != 0) {
+            configurationRepository.updateConfiguration(jsonInput.optString("configuration_value"), jsonInput.optInt("configuration_id"));
+            result.setStatus("2000");
+            result.setSuccess(true);
+            result.setMessage("Config " + jsonInput.optString("configuration_name") + " updated");
+        }
+        return result;
     }
 
 //    @PostMapping("/queryBuilder")

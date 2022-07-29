@@ -39,7 +39,7 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
 
     @Modifying
     @Query(value = "INSERT INTO cms.Resource(status,resource_name,\"type\",thumbnail,\"file\",duration,stretch,\"order\",created_by,created_date,updated_by,updated_date,url_resource) " +
-            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:order,:created_by,current_timestamp,:created_by,current_timestamp,url_resource)", nativeQuery = true)
+            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:order,:created_by,current_timestamp,:created_by,current_timestamp,:url_resource)", nativeQuery = true)
     void save(@Param("resource_name") String resource_name, @Param("type") String type,
               @Param("thumbnail") String thumbnail, @Param("file") String file,
               @Param("duration") int duration, @Param("stretch") String stretch,
