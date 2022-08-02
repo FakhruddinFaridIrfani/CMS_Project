@@ -43,11 +43,11 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
     @Query(value = "SELECT * FROM cms.Region WHERE company_id =:company_id AND status not in ('deleted')", nativeQuery = true)
     List<Region> getRegionByCompanyId(@Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.Region WHERE lower(region_name) =lower(:region_name) AND status not in ('deleted')", nativeQuery = true)
-    List<Region> getRegionByName(@Param("region_name") String region_name);
+    @Query(value = "SELECT * FROM cms.Region WHERE lower(region_name) =lower(:region_name) AND status not in ('deleted') AND company_id =:company_id", nativeQuery = true)
+    List<Region> getRegionByName(@Param("region_name") String region_name, @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.Region WHERE lower(region_name) =lower(:region_name) AND region_id not in (:region_id) AND status not in ('deleted')", nativeQuery = true)
-    List<Region> getRegionByNameExceptId(@Param("region_name") String region_name, @Param("region_id") int region_id);
+    @Query(value = "SELECT * FROM cms.Region WHERE lower(region_name) =lower(:region_name) AND region_id not in (:region_id) AND status not in ('deleted') AND company_id =:company_id", nativeQuery = true)
+    List<Region> getRegionByNameExceptId(@Param("region_name") String region_name, @Param("company_id") int company_id, @Param("region_id") int region_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Region SET region_name=:region_name,company_id=:company_id,status=:status," +

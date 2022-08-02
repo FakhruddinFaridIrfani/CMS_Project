@@ -9,29 +9,29 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "Branch", schema = "cms")
-public class Branch {
+@Table(name = "playlist_resource", schema = "cms")
+public class PlaylistResource {
     @Id
-    @Column(name = "branch_id", columnDefinition = "serial")
+    @Column(name = "playlist_resource_id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int branch_id;
-
-    @NotNull
-    @Column(name = "company_id")
-    private int company_id;
-
-    @NotNull
-    @Column(name = "region_id")
-    private int region_id;
+    private int playlist_resource_id;
 
     @NotNull
     @Column(name = "status")
     private String status;
 
+    @NotNull
+    @Column(name = "playlist_id")
+    private int playlist_id;
 
     @NotNull
-    @Column(name = "branch_name")
-    private String branch_name;
+    @Column(name = "resource_id")
+    private int resource_id;
+
+    @NotNull
+    @Column(name = "order")
+    private int order;
+
 
     @NotNull
     @Column(name = "created_by")
@@ -53,12 +53,12 @@ public class Branch {
     @Column(name = "updated_date")
     private Date updated_date;
 
-    public int getBranch_id() {
-        return branch_id;
+    public int getPlaylist_resource_id() {
+        return playlist_resource_id;
     }
 
-    public void setBranch_id(int branch_id) {
-        this.branch_id = branch_id;
+    public void setPlaylist_resource_id(int playlist_resource_id) {
+        this.playlist_resource_id = playlist_resource_id;
     }
 
     public String getStatus() {
@@ -69,13 +69,28 @@ public class Branch {
         this.status = status;
     }
 
-
-    public String getBranch_name() {
-        return branch_name;
+    public int getPlaylist_id() {
+        return playlist_id;
     }
 
-    public void setBranch_name(String branch_name) {
-        this.branch_name = branch_name;
+    public void setPlaylist_id(int playlist_id) {
+        this.playlist_id = playlist_id;
+    }
+
+    public int getResource_id() {
+        return resource_id;
+    }
+
+    public void setResource_id(int resource_id) {
+        this.resource_id = resource_id;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
     }
 
     public String getCreated_by() {
@@ -108,36 +123,5 @@ public class Branch {
 
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
-    }
-
-    public int getRegion_id() {
-        return region_id;
-    }
-
-    public void setRegion_id(int region_id) {
-        this.region_id = region_id;
-    }
-
-    public int getCompany_id() {
-        return company_id;
-    }
-
-    public void setCompany_id(int company_id) {
-        this.company_id = company_id;
-    }
-
-    @Override
-    public String toString() {
-        return "Branch{" +
-                "branch_id=" + branch_id +
-                ", company_id=" + company_id +
-                ", region_id=" + region_id +
-                ", status='" + status + '\'' +
-                ", branch_name='" + branch_name + '\'' +
-                ", created_by='" + created_by + '\'' +
-                ", created_date=" + created_date +
-                ", updated_by='" + updated_by + '\'' +
-                ", updated_date=" + updated_date +
-                '}';
     }
 }

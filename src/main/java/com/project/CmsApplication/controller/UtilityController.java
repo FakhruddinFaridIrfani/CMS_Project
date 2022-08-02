@@ -10,8 +10,14 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +53,28 @@ public class UtilityController {
         JSONObject jsonObject = new JSONObject(input);
         return cmsServices.addFile(jsonObject.optString("file_name"), jsonObject.optString("file_content"), jsonObject.optString("folder"));
     }
+
+    @PostMapping("/uploadFile")
+    public BaseResponse<String> uploadFile(@RequestParam MultipartFile obj,@RequestParam String folder) throws Exception {
+        logger.info(new Date().getTime() + " : Upload multipart file");
+        BaseResponse baseResponse = new BaseResponse<>();
+        return cmsServices.uploadFile(obj, folder);
+    }
+    @PostMapping("/downloadFile")
+    public ResponseEntity<InputStreamResource> downloadFile(@RequestBody String input) throws Exception {
+        logger.info(new Date().getTime() + " : Upload multipart file");
+        BaseResponse baseResponse = new BaseResponse<>();
+        JSONObject jsonInput = new JSONObject(input);
+        InputStreamResource file = cmsServices.downloadFile(jsonInput.getString("file_name"),jsonInput.getString("folder"));
+        return ResponseEntity.ok()
+                .contentType(MediaType.ALL)
+                .header(HttpHeaders.CONTENT_DISPOSITION)
+                .body(file);
+    }
+
+
+
+
 
     @PostMapping("/getFile")
     public BaseResponse<Map<String, Object>> getFileByName(@RequestBody String input) throws Exception {

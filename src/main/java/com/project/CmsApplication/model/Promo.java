@@ -17,8 +17,17 @@ public class Promo {
     private int promo_id;
 
     @NotNull
+    @Column(name = "company_id")
+    private int company_id;
+
+    @NotNull
+    @Column(name = "region_id")
+    private int region_id;
+
+    @NotNull
     @Column(name = "branch_id")
     private int branch_id;
+
 
     @NotNull
     @Column(name = "tittle")
@@ -200,10 +209,28 @@ public class Promo {
         this.thumbnail = thumbnail;
     }
 
+    public int getCompany_id() {
+        return company_id;
+    }
+
+    public void setCompany_id(int company_id) {
+        this.company_id = company_id;
+    }
+
+    public int getRegion_id() {
+        return region_id;
+    }
+
+    public void setRegion_id(int region_id) {
+        this.region_id = region_id;
+    }
+
     @Override
     public String toString() {
         return "Promo{" +
                 "promo_id=" + promo_id +
+                ", company_id=" + company_id +
+                ", region_id=" + region_id +
                 ", branch_id=" + branch_id +
                 ", tittle='" + tittle + '\'' +
                 ", file='" + file + '\'' +

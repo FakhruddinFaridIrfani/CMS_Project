@@ -18,6 +18,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
             "lower(branch_name) like lower(:branch_name) AND " +
             "CAST(branch_id AS VARCHAR) like :branch_id AND " +
             "CAST(region_id AS VARCHAR) like :region_id AND " +
+            "CAST(company_id AS VARCHAR) like :company_id AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
             "lower(created_by) like lower(:created_by) AND " +
@@ -27,6 +28,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
     List<Branch> getBranchList(@Param("branch_name") String branch_name,
                                @Param("region_id") String region_id,
                                @Param("branch_id") String branch_id,
+                               @Param("company_id") String company_id,
                                @Param("status") String status,
                                @Param("created_by") String created_by,
                                @Param("created_date") String created_date,
@@ -34,9 +36,10 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
                                @Param("updated_date") String updated_at);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Branch(status,region_id,branch_name,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:region_id,:branch_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("region_id") int region_id, @Param("branch_name") String branch_name, @Param("created_by") String created_by);
+    @Query(value = "INSERT INTO cms.Branch(status,region_id,company_id,branch_name,created_by,created_date,updated_by,updated_date) " +
+            "VALUES('active',:region_id,:company_id,:branch_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+    void save(@Param("region_id") int region_id, @Param("company_id") int company_id, @Param("branch_name") String branch_name,
+              @Param("created_by") String created_by);
 
     @Query(value = "SELECT * FROM cms.Branch WHERE branch_id =:branch_id", nativeQuery = true)
     List<Branch> getBranchById(@Param("branch_id") int branch_id);
@@ -44,16 +47,17 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
     @Query(value = "SELECT * FROM cms.Branch WHERE region_id =:region_id AND status not in ('deleted')", nativeQuery = true)
     List<Branch> getBranchByRegionId(@Param("region_id") int region_id);
 
-    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND status not in ('deleted') ", nativeQuery = true)
-    List<Branch> getBranchByName(@Param("branch_name") String branch_name);
+    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND status not in ('deleted') AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
+    List<Branch> getBranchByName(@Param("branch_name") String branch_name, @Param("region_id") int region_id, @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND branch_id not in (:branch_id) AND status not in ('deleted') ", nativeQuery = true)
-    List<Branch> getBranchByNameExceptId(@Param("branch_name") String branch_name, @Param("branch_id") int branch_id);
+    @Query(value = "SELECT * FROM cms.Branch WHERE lower(branch_name) =lower(:branch_name) AND branch_id not in (:branch_id) AND status not in ('deleted') AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
+    List<Branch> getBranchByNameExceptId(@Param("branch_name") String branch_name, @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("branch_id") int branch_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Branch SET branch_name=:branch_name,region_id=:region_id,status=:status," +
+    @Query(value = "UPDATE cms.Branch SET branch_name=:branch_name,region_id=:region_id,company_id=:company_id,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE branch_id =:branch_id ", nativeQuery = true)
-    void updateBranch(@Param("branch_name") String branch_name, @Param("region_id") int region_id, @Param("status") String status,
+    void updateBranch(@Param("branch_name") String branch_name, @Param("region_id") int region_id,
+                      @Param("company_id") int company_id, @Param("status") String status,
                       @Param("updated_by") String updated_by, @Param("branch_id") int branch_id);
 
     @Modifying

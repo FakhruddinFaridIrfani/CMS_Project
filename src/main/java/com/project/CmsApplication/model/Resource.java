@@ -48,10 +48,6 @@ public class Resource {
     private String stretch;
 
 
-    @NotNull
-    @Column(name = "order")
-    private String order;
-
     @Column(name = "url_resource")
     private String url_resource;
 
@@ -140,13 +136,6 @@ public class Resource {
         this.stretch = stretch;
     }
 
-    public String getOrder() {
-        return order;
-    }
-
-    public void setOrder(String order) {
-        this.order = order;
-    }
 
     public String getCreated_by() {
         return created_by;
@@ -199,7 +188,6 @@ public class Resource {
                 ", duration='" + duration + '\'' +
                 ", status='" + status + '\'' +
                 ", stretch='" + stretch + '\'' +
-                ", order='" + order + '\'' +
                 ", url_resource='" + url_resource + '\'' +
                 ", created_by='" + created_by + '\'' +
                 ", created_date=" + created_date +

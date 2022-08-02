@@ -22,16 +22,21 @@ public class Playlist {
     @NotNull
     @Column(name = "playlist_name")
     private String playlist_name;
+
     @NotNull
     @Column(name = "branch_id")
     private int branch_id;
+
+    @NotNull
+    @Column(name = "region_id")
+    private int region_id;
+    @NotNull
+    @Column(name = "company_id")
+    private int company_id;
+
     @NotNull
     @Column(name = "position_id")
     private int position_id;
-    @NotNull
-    @Column(name = "resource_id")
-    private int resource_id;
-
 
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
@@ -111,14 +116,6 @@ public class Playlist {
         this.position_id = position_id;
     }
 
-    public int getResource_id() {
-        return resource_id;
-    }
-
-    public void setResource_id(int resource_id) {
-        this.resource_id = resource_id;
-    }
-
     public Date getStart_date() {
         return start_date;
     }
@@ -175,6 +172,22 @@ public class Playlist {
         this.updated_date = updated_date;
     }
 
+    public int getRegion_id() {
+        return region_id;
+    }
+
+    public void setRegion_id(int region_id) {
+        this.region_id = region_id;
+    }
+
+    public int getCompany_id() {
+        return company_id;
+    }
+
+    public void setCompany_id(int company_id) {
+        this.company_id = company_id;
+    }
+
     @Override
     public String toString() {
         return "Playlist{" +
@@ -182,8 +195,9 @@ public class Playlist {
                 ", status='" + status + '\'' +
                 ", playlist_name='" + playlist_name + '\'' +
                 ", branch_id=" + branch_id +
+                ", region_id=" + region_id +
+                ", company_id=" + company_id +
                 ", position_id=" + position_id +
-                ", resource_id=" + resource_id +
                 ", start_date=" + start_date +
                 ", end_date=" + end_date +
                 ", sort=" + sort +
