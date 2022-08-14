@@ -6,6 +6,7 @@ import com.project.CmsApplication.model.Company;
 import com.project.CmsApplication.model.PlaylistResource;
 import com.project.CmsApplication.repository.CompanyRepository;
 import com.project.CmsApplication.repository.PlaylistResourceRepository;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +38,16 @@ public class PlaylistResourceController {
     @PostMapping("/addPlaylistResource")
     public BaseResponse<String> addPlaylistResource(@RequestBody String input) throws Exception, SQLException, ParseException {
         logger.info(new Date().getTime() + " : addPlaylistResource - " + input);
-        JSONObject object = new JSONObject(input);
-        return cmsServices.addPlaylistResource(object.optString("user_token"), object.optInt("resource_id"), object.optInt("playlist_id"), object.optInt("order"));
+        BaseResponse<String> response = new BaseResponse<>();
+        JSONObject jsonInput = new JSONObject(input);
+        JSONArray playlistResourceItem = jsonInput.getJSONArray("data");
+        for (int i = 0; i < playlistResourceItem.length(); i++) {
+            JSONObject obj = playlistResourceItem.getJSONObject(i);
+            response = cmsServices.addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), jsonInput.getInt("playlist_id"), obj.getInt("order"));
+        }
+
+
+        return response;
     }
 
     @PostMapping("/updatePlaylistResource")

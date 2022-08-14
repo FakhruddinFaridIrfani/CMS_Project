@@ -14,6 +14,7 @@ import java.util.List;
 @Transactional
 public interface BranchRepository extends JpaRepository<Branch, Integer> {
 
+
     @Query(value = "SELECT * FROM cms.Branch WHERE " +
             "lower(branch_name) like lower(:branch_name) AND " +
             "CAST(branch_id AS VARCHAR) like :branch_id AND " +

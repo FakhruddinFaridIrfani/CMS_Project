@@ -32,7 +32,7 @@ public class ResourceController {
 
     @PostMapping("/addNewResource")
     public BaseResponse<String> addNewResource(@RequestBody String input) throws Exception, SQLException, ParseException {
-        logger.info(new Date().getTime() + " : addNewResource - " + input);
+        logger.info(new Date().getTime() + " : addNewResource - ");
         return cmsServices.addNewResource(input);
     }
 

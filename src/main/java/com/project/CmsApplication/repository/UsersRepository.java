@@ -59,9 +59,9 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     List<Users> tokenAuth(@Param("user_token") String user_token);
 
     @Modifying
-    @Query(value = "UPDATE cms.Users SET user_name=:user_name,user_email=:user_email," +
+    @Query(value = "UPDATE cms.Users SET user_email=:user_email," +
             "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
-    void updateUser(@Param("user_name") String user_name, @Param("user_email") String user_email,
+    void updateUser(@Param("user_email") String user_email,
                     @Param("status") String status, @Param("user_full_name") String user_full_name,
                     @Param("updated_by") String updated_by, @Param("branch_id") int branch_id,
                     @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("user_id") int user_id);

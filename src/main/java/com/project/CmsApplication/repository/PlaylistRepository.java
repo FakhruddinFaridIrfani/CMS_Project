@@ -38,8 +38,8 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
 
     @Modifying
     @Query(value = "INSERT INTO cms.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    List<Playlist> save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
+            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
+void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
                         @Param("region_id") int region_id, @Param("company_id") int company_id,
                         @Param("position_id") int position_id,
                         @Param("start_date") String start_date, @Param("end_date") String end_date,
@@ -86,6 +86,11 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
 
     @Query(value = "SELECT * FROM cms.Playlist WHERE branch_id=:branch_id AND position_id=:position_id AND status= 'active' ORDER BY \"sort\" DESC LIMIT 1 ", nativeQuery = true)
     List<Playlist> getSortOrder(@Param("position_id") int position_id, @Param("branch_id") int branch_id);
+
+
+
+    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name)", nativeQuery = true)
+    List<Playlist> getPlaylistByNameInsertedValues(@Param("playlist_name") String playlist_name);
 
 
 }

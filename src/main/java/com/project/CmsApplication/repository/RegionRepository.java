@@ -18,6 +18,7 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
     @Query(value = "SELECT * FROM cms.Region WHERE " +
             "lower(region_name) like lower(:region_name) AND " +
             "CAST(company_id AS VARCHAR) like :company_id AND " +
+            "CAST(region_id AS VARCHAR) like :region_id AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
             "lower(created_by) like lower(:created_by) AND " +
@@ -26,6 +27,7 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Region> getRegionList(@Param("region_name") String region_name,
                                @Param("company_id") String company_id,
+                               @Param("region_id") String region_id,
                                @Param("status") String status,
                                @Param("created_by") String created_by,
                                @Param("created_date") String created_date,

@@ -9,6 +9,7 @@ import com.project.CmsApplication.controller.BranchController;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,30 +21,33 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.List;
 
 @Service
 public class CmsServices {
 
+    private static final int BUFFER_SIZE = 8192;
     Gson gson = new Gson();
     DateFormatter dateFormatter = new DateFormatter();
 
@@ -397,15 +401,15 @@ public class CmsServices {
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
-            List<Users> userNameCheckResult = usersRepository.getUsersByNameExceptId(jsonInput.optString("user_name"), jsonInput.optInt("user_id"));
-            if (userNameCheckResult.size() > 0) {
-                response.setStatus("0");
-                response.setSuccess(false);
-                response.setMessage("User name already exist / used");
-                return response;
-            }
+//            List<Users> userNameCheckResult = usersRepository.getUsersByNameExceptId(jsonInput.optString("user_name"), jsonInput.optInt("user_id"));
+//            if (userNameCheckResult.size() > 0) {
+//                response.setStatus("0");
+//                response.setSuccess(false);
+//                response.setMessage("User name already exist / used");
+//                return response;
+//            }
             String userOnProcess = auth.get("user_name").toString();
-            usersRepository.updateUser(jsonInput.optString("user_name"), jsonInput.optString("user_email"),
+            usersRepository.updateUser(jsonInput.optString("user_email"),
                     jsonInput.optString("status"), jsonInput.optString("user_full_name"),
                     userOnProcess, jsonInput.optInt("branch_id"),
                     jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("user_id"));
@@ -727,6 +731,7 @@ public class CmsServices {
         String created_date = "%%";
         String updated_date = "%%";
         String company_name;
+        String company_id;
         String company_address;
         String company_email;
         String company_phone;
@@ -757,9 +762,13 @@ public class CmsServices {
             if (status.isEmpty()) {
                 status = "%%";
             }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Company> getCompanyResult = companyRepository.getCompanyList(company_name, company_address, company_phone, company_email,
+            List<Company> getCompanyResult = companyRepository.getCompanyList(company_name, company_id, company_address, company_phone, company_email,
                     status, created_by, created_date, updated_by, updated_date);
             response.setData(getCompanyResult);
 
@@ -904,6 +913,7 @@ public class CmsServices {
         String updated_date = "%%";
         String region_name;
         String company_id;
+        String region_id;
         String status;
         String created_by;
         String updated_by;
@@ -928,13 +938,17 @@ public class CmsServices {
             if (company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
                 company_id = "%%";
             }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
                 status = "%%";
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Region> getRegionResult = regionRepository.getRegionList(region_name, company_id, status, created_by, created_date, updated_by, updated_date);
+            List<Region> getRegionResult = regionRepository.getRegionList(region_name, company_id, region_id, status, created_by, created_date, updated_by, updated_date);
 
             for (int i = 0; i < getRegionResult.size(); i++) {
                 Map resultMap = new HashMap();
@@ -1279,9 +1293,16 @@ public class CmsServices {
             }
 
             String file = "";
+            String thumbnail = "";
             if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
-                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+                Map<String, String> fileAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+                file = fileAddResult.get("file");
+                thumbnail = fileAddResult.get("thumbnail");
             }
+            if (!jsonInput.optString("url_resource").isEmpty()) {
+                thumbnail = "thumbnail_url.png";
+            }
+
             if (jsonInput.optInt("company_id") == 0) {
                 response.setStatus("0");
                 response.setSuccess(false);
@@ -1289,7 +1310,7 @@ public class CmsServices {
                 return response;
             }
             promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
-                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess, jsonInput.optString("thumbnail"));
+                    jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess, thumbnail);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Promo successfully Added");
@@ -1369,18 +1390,46 @@ public class CmsServices {
 
             for (int i = 0; i < getPromoResult.size(); i++) {
                 Map resultMap = new HashMap();
-                List<Branch> branches = getBranchById(getPromoResult.get(i).getBranch_id());
-                List<Region> region = getRegionById(branches.get(0).getRegion_id());
-                List<Company> company = getCompanyById(region.get(0).getCompany_id());
-                resultMap.put("company_name", company.get(0).getCompany_name());
-                resultMap.put("company_id", company.get(0).getCompany_id());
+                if (getPromoResult.get(i).getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(getPromoResult.get(i).getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (getPromoResult.get(i).getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(getPromoResult.get(i).getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (getPromoResult.get(i).getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(getPromoResult.get(i).getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+
                 resultMap.put("promo", getPromoResult.get(i));
-                resultMap.put("region_name", region.get(0).getRegion_name());
-                resultMap.put("region_id", region.get(0).getRegion_id());
-                resultMap.put("branch_name", branches.get(0).getBranch_name());
-                resultMap.put("branch_id", branches.get(0).getBranch_id());
 
                 result.add(resultMap);
+            }
+            for (Map map : result) {
+                Promo promo = (Promo) map.get("promo");
+                if (!promo.getThumbnail().isEmpty()) {
+                    logger.info("promo thumbnail : " + promo.getThumbnail());
+                    try {
+                        promo.setThumbnail(getFile(promo.getThumbnail(), "promo").getData().get("file_base64").toString());
+                    } catch (Exception e) {
+                        logger.info("promo error : " + e.getMessage());
+                        promo.setThumbnail("");
+                    }
+                }
             }
 
 
@@ -1419,8 +1468,12 @@ public class CmsServices {
                 return response;
             }
             String file = jsonInput.optString("file");
+            String thumbnail = getPromoById(jsonInput.optInt("promo_id")).get(0).getThumbnail();
             if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
-                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+                Map<String, String> imageAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "promo").getData();
+                file = imageAddResult.get("file");
+                thumbnail = imageAddResult.get("thumbnail");
+
             }
             if (jsonInput.optInt("company_id") == 0) {
                 response.setStatus("0");
@@ -1430,7 +1483,7 @@ public class CmsServices {
             }
             promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
-                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"), jsonInput.optString("thumbnail"));
+                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"), thumbnail);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("Promo successfully Updated");
@@ -1848,10 +1901,16 @@ public class CmsServices {
                 return response;
             }
             String file = "";
+            String thumbnail = "";
             if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
-                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+                Map<String, String> fileAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+                file = fileAddResult.get("file");
+                thumbnail = fileAddResult.get("thumbnail");
             }
-            resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"),
+            if (!jsonInput.optString("url_resource").isEmpty()) {
+                thumbnail = "thumbnail_url.png";
+            }
+            resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail,
                     file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), userOnProcess, jsonInput.optString("url_resource"));
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1914,7 +1973,15 @@ public class CmsServices {
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
                     stretch, status, created_by, created_date, updated_by, updated_date);
-
+            for (Resource resource : getResourceResult) {
+                if (!resource.getThumbnail().isEmpty()) {
+                    try {
+                        resource.setThumbnail(getFile(resource.getThumbnail(), "resource").getData().get("file_base64").toString());
+                    } catch (Exception e) {
+                        resource.setThumbnail("");
+                    }
+                }
+            }
 
             response.setData(getResourceResult);
             response.setStatus("2000");
@@ -1951,10 +2018,13 @@ public class CmsServices {
                 return response;
             }
             String file = jsonInput.optString("file");
+            String thumbnail = getResourceById(jsonInput.optInt("resource_id")).get(0).getThumbnail();
             if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
-                file = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+                Map<String, String> fileAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+                file = fileAddResult.get("file");
+                thumbnail = fileAddResult.get("thumbnail");
             }
-            resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), jsonInput.optString("thumbnail"), file,
+            resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail, file,
                     jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"), jsonInput.optString("url_resource"));
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1984,14 +2054,14 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
 
-//            //Check playlist use this resource
-//            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByResourceId(jsonInput.optInt("resource_id"));
-//            if (usedPositionOnPlaylist.size() > 0) {
-//                response.setStatus("0");
-//                response.setSuccess(false);
-//                response.setMessage("Resource still used on " + usedPositionOnPlaylist.size() + " playlist(s)");
-//                return response;
-//            }
+            //Check playlist use this resource
+            List<PlaylistResource> usedResourceOnPlaylist = playlistResourceRepository.getPlaylistResourceByResourceId(jsonInput.optInt("resource_id"));
+            if (usedResourceOnPlaylist.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Resource still used on " + usedResourceOnPlaylist.size() + " playlist(s)");
+                return response;
+            }
 
             resourceRepository.deleteResource(jsonInput.optInt("resource_id"), userOnProcess);
             response.setStatus("2000");
@@ -2046,14 +2116,16 @@ public class CmsServices {
             if (latestSort.size() > 0) {
                 currentSort = latestSort.get(0).getSort() + 1;
             }
-            List<Playlist> insertedPlaylist = playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
+            playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
                     jsonInput.optString("start_date"), jsonInput.optString("end_date"), currentSort, userOnProcess);
 
             //Inserting resource to playlist_resource
             JSONArray playlistResourceItem = jsonInput.getJSONArray("resource_list");
+            List<Playlist> insertedPlaylist = playlistRepository.getPlaylistByNameInsertedValues(jsonInput.optString("playlist_name"));
+//            logger.info("JSONArray : " + playlistResourceItem.toString());
             for (int i = 0; i < playlistResourceItem.length(); i++) {
                 JSONObject obj = playlistResourceItem.getJSONObject(i);
-                addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), obj.getInt("playlist_id"), obj.getInt("order"));
+                addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), insertedPlaylist.get(0).getPlaylist_id(), obj.getInt("order"));
             }
 
 
@@ -2114,6 +2186,9 @@ public class CmsServices {
                 region_id = "%%";
             }
             company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
             position_id = jsonInput.optInt("position_id") + "";
             if (position_id.isEmpty() || position_id.compareToIgnoreCase("null") == 0 || position_id.compareToIgnoreCase("0") == 0) {
                 position_id = "%%";
@@ -2137,16 +2212,37 @@ public class CmsServices {
 
             for (int i = 0; i < getResultPlayList.size(); i++) {
                 Map resultMap = new HashMap();
-                List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
+                if (getResultPlayList.get(i).getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (getResultPlayList.get(i).getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(getResultPlayList.get(i).getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (getResultPlayList.get(i).getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(getResultPlayList.get(i).getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+
                 List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
                 List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getDevice_id());
-                List<Region> regions = regionRepository.getRegionById(branch.get(0).getRegion_id());
-                List<Company> companies = companyRepository.getCompanyById(regions.get(0).getCompany_id());
-                resultMap.put("company", companies.get(0));
-                resultMap.put("region", regions.get(0));
+
+
                 resultMap.put("device", devices.get(0));
                 resultMap.put("position", positions.get(0));
-                resultMap.put("branch", branch.get(0));
                 resultMap.put("playlist", getResultPlayList.get(i));
 
                 result.add(resultMap);
@@ -2242,8 +2338,10 @@ public class CmsServices {
 //        getPlaylistResource = playlistRepository.getPlaylistByName(playlist_name);
 //        return getPlaylistResource;
 //    }
+
     //PLAYLIST-RESOURCE SECTION
-    public BaseResponse<String> addPlaylistResource(String userToken, int resource_id, int playlist_id, int order) throws Exception {
+    public BaseResponse<String> addPlaylistResource(String userToken, int resource_id, int playlist_id, int order) throws
+            Exception {
         BaseResponse response = new BaseResponse();
         try {
             Map<String, Object> auth = tokenAuthentication(userToken);
@@ -2314,7 +2412,11 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            playlistResourceRepository.updatePlaylistResource(jsonInput.optInt("order"), jsonInput.optInt("playlist_resource_id"), userOnProcess);
+            JSONArray playlistResourceItem = jsonInput.getJSONArray("data");
+            for (int i = 0; i < playlistResourceItem.length(); i++) {
+                JSONObject obj = playlistResourceItem.getJSONObject(i);
+                playlistResourceRepository.updatePlaylistResource(obj.optInt("order"), obj.optInt("playlist_resource_id"), userOnProcess);
+            }
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully Updated");
@@ -2342,8 +2444,12 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            JSONArray playlistResourceItem = jsonInput.getJSONArray("data");
+            for (int i = 0; i < playlistResourceItem.length(); i++) {
+                JSONObject obj = playlistResourceItem.getJSONObject(i);
+                playlistResourceRepository.deletePlaylistResource(obj.optInt("playlist_resource_id"));
+            }
 
-            playlistResourceRepository.deletePlaylistResource(jsonInput.optInt("playlist_resource_id"));
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully deleted");
@@ -2379,10 +2485,11 @@ public class CmsServices {
 
 
     //FILE SECTION
-    public BaseResponse<String> addFile(String file_name, String file_content, String folder) {
+    public BaseResponse<Map<String, String>> addFile(String file_name, String file_content, String folder) {
         BaseResponse response = new BaseResponse();
         Session session = null;
         ChannelSftp channel = null;
+        Map<String, String> imageAddResult = new HashMap<>();
         try {
             UUID uuid = UUID.randomUUID();
             session = new JSch().getSession(sftpUser, sftpUrl, 22);
@@ -2409,7 +2516,40 @@ public class CmsServices {
             InputStream stream = new ByteArrayInputStream(b);
             channel.put(stream, path + uuid + "_" + file_name, 0);
 
-            response.setData(uuid + "_" + file_name);
+//            creating thumbnail
+            String[] acceptedImageType = {"JPEG", "PNG", "BMP", "WEBMP", "GIF", "JPG"};
+            List<String> acceptedImage = new ArrayList(Arrays.asList(acceptedImageType));
+            String[] acceptedVideoType = {"MOV", "MP4", "3GP"};
+            List<String> acceptedVideo = new ArrayList(Arrays.asList(acceptedVideoType));
+            String thumbnailBase64 = "";
+            String thumbnailName = "";
+            String fileExtension = file_name.substring(file_name.lastIndexOf(".") + 1);
+            if (acceptedImage.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
+                logger.info("creating thumbnail for  " + fileExtension + " image");
+                BufferedImage img = ImageIO.read(new ByteArrayInputStream(b));
+                BufferedImage resizedImage = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+                Graphics2D graphics2D = resizedImage.createGraphics();
+                graphics2D.drawImage(img, 0, 0, 60, 60, null);
+                graphics2D.dispose();
+                ByteArrayOutputStream out = new ByteArrayOutputStream(BUFFER_SIZE);
+                ImageIO.write(resizedImage, fileExtension, out);
+                thumbnailBase64 = Base64.getEncoder().encodeToString(out.toByteArray());
+                byte[] c = Base64.getMimeDecoder().decode(thumbnailBase64);
+                InputStream streamThumbnail = new ByteArrayInputStream(c);
+                channel.put(streamThumbnail, path + "thumbnail_" + uuid + "_" + file_name, 0);
+                thumbnailName = "thumbnail_" + uuid + "_" + file_name;
+            } else if (acceptedVideo.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
+                logger.info("creating thumbnail for  " + fileExtension + " video");
+                thumbnailName = "thumbnail_video.png";
+            } else {
+                logger.info("its not an image or video, used web thumbnail");
+                thumbnailName = "thumbnail_url.png";
+            }
+
+            imageAddResult.put("file", uuid + "_" + file_name);
+            imageAddResult.put("thumbnail", thumbnailName);
+
+            response.setData(imageAddResult);
             response.setStatus("2000");
             response.setSuccess(true);
             response.setMessage("File successfully Added");
@@ -2453,6 +2593,7 @@ public class CmsServices {
                 response.setStatus("0");
                 response.setSuccess(false);
                 response.setMessage("unknown folder");
+                logger.info("unknown folder");
                 return response;
             }
 
@@ -2484,11 +2625,13 @@ public class CmsServices {
         return response;
     }
 
-    public InputStreamResource downloadFile(String file_name, String folder) {
+    public InputStream downloadFile(String file_name, String folder) {
         Session session = null;
         ChannelSftp channel = null;
         Map<String, Object> result = new HashMap<>();
         InputStreamResource resource = null;
+        org.springframework.core.io.Resource resources;
+        InputStream inputStream = null;
         try {
             session = new JSch().getSession(sftpUser, sftpUrl, 22);
             session.setPassword(sftpPassword);
@@ -2511,7 +2654,7 @@ public class CmsServices {
                 return null;
             }
 
-            InputStream inputStream = channel.get(path + file_name);
+            inputStream = channel.get(path + file_name);
             resource = new InputStreamResource(inputStream);
             byte[] bytes = IOUtils.toByteArray(inputStream);
             String base64 = Base64.getEncoder().encodeToString(bytes);
@@ -2534,7 +2677,7 @@ public class CmsServices {
                 channel.disconnect();
             }
         }
-        return resource;
+        return inputStream;
     }
 
     public BaseResponse<String> uploadFile(MultipartFile obj, String folder) {
