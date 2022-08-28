@@ -92,5 +92,7 @@ void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int 
     @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name)", nativeQuery = true)
     List<Playlist> getPlaylistByNameInsertedValues(@Param("playlist_name") String playlist_name);
 
+    @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
+    List<Playlist> getExpiredPlaylist();
 
 }

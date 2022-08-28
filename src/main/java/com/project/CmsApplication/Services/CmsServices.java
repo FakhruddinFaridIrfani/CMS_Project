@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.controller.BranchController;
+import com.project.CmsApplication.controller.RunningTextController;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -62,6 +64,9 @@ public class CmsServices {
 
     @Autowired
     PromoRepository promoRepository;
+
+    @Autowired
+    RunningTextRepository runningTextRepository;
 
     @Autowired
     DeviceRepository deviceRepository;
@@ -2461,6 +2466,231 @@ public class CmsServices {
         return response;
     }
 
+    //RUNNING TEXT SECTION
+    public BaseResponse<String> addNewRunningText(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+
+            //RunningText tittle  check
+            List<RunningText> runningTextTittleCheckResult = runningTextRepository.getRunningTextByTittle(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
+            if (runningTextTittleCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("RunningText Tittle already exist / used");
+                return response;
+            }
+            if (jsonInput.optInt("company_id") == 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Unknown company, please choose existing company.");
+                return response;
+            }
+            runningTextRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
+                    jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("RunningText successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getRunningTextList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String branch_id;
+        String region_id;
+        String company_id;
+        String tittle;
+        String description;
+        String running_text;
+        String start_date;
+        String end_date;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+            tittle = "%" + jsonInput.optString("tittle") + "%";
+            description = "%" + jsonInput.optString("description") + "%";
+            running_text = "%" + jsonInput.optString("popup_description") + "%";
+            start_date = "%" + jsonInput.optString("start_date") + "%";
+            end_date = "%" + jsonInput.optString("end_date") + "%";
+
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<RunningText> getRunningTextResult = runningTextRepository.getRunningTextList(branch_id, region_id, company_id, tittle, description,
+                    running_text, start_date, end_date, status, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getRunningTextResult.size(); i++) {
+                Map resultMap = new HashMap();
+                if (getRunningTextResult.get(i).getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(getRunningTextResult.get(i).getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (getRunningTextResult.get(i).getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(getRunningTextResult.get(i).getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (getRunningTextResult.get(i).getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(getRunningTextResult.get(i).getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+
+                resultMap.put("running_text", getRunningTextResult.get(i));
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("RunningText Listed");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<RunningText> updateRunningText(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            //RunningText tittle  check
+            List<RunningText> running_textTittleCheckResult = runningTextRepository.getRunningTextByTittleExceptId(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("running_text_id"));
+            if (running_textTittleCheckResult.size() > 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("RunningText Tittle already exist / used");
+                return response;
+            }
+            if (jsonInput.optInt("company_id") == 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Unknown company, please choose existing company.");
+                return response;
+            }
+            runningTextRepository.updateRunningText(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
+                    jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
+                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("running_text_id"));
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("RunningText successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<RunningText> deleteRunningText(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            runningTextRepository.deleteRunningText(jsonInput.optInt("running_text_id"), userOnProcess);
+            response.setStatus("2000");
+            response.setSuccess(true);
+            response.setMessage("RunningText successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("0");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<RunningText> getRunningTextById(int running_text_id) {
+        List<RunningText> getRunningTextResult = new ArrayList<>();
+        getRunningTextResult = runningTextRepository.getRunningTextById(running_text_id);
+        return getRunningTextResult;
+    }
+
 
     //TOKEN AUTH
     public Map<String, Object> tokenAuthentication(String token) {
@@ -2753,5 +2983,7 @@ public class CmsServices {
 //
 //        return response;
 //    }
+
+    //SCHEDULER SECTION
 
 }
