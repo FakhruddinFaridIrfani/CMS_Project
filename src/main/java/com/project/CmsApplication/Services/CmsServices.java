@@ -708,6 +708,14 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
 
             //company name  check
+            if (jsonInput.optString("company_name").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Company name can't be empty");
+                return response;
+            }
+
+
             List<Company> companyNameCheckResult = companyRepository.getCompanyByName(jsonInput.optString("company_name"));
             if (companyNameCheckResult.size() > 0) {
                 response.setStatus("0");
@@ -715,6 +723,7 @@ public class CmsServices {
                 response.setMessage("Company name already exist / used");
                 return response;
             }
+
             companyRepository.save(jsonInput.optString("company_name"), jsonInput.optString("company_address"),
                     jsonInput.optString("company_phone"), jsonInput.optString("company_email"), userOnProcess);
             response.setStatus("2000");
@@ -889,6 +898,18 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
 
             //Region name  check
+            if (jsonInput.optString("region_name").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Region name can't be empty");
+                return response;
+            }
+            if (jsonInput.optInt("company_id") == 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Company can't be empty");
+                return response;
+            }
             List<Region> regionNameCheckResult = regionRepository.getRegionByName(jsonInput.optString("region_name"), jsonInput.optInt("company_id"));
             if (regionNameCheckResult.size() > 0) {
                 response.setStatus("0");
@@ -904,7 +925,7 @@ public class CmsServices {
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
-            response.setMessage(e.getMessage());
+            response.setMessage("Failed create Region : " + e.getMessage());
         }
 
         return response;
@@ -1000,6 +1021,12 @@ public class CmsServices {
                 response.setMessage("Region name already exist / used");
                 return response;
             }
+            if (jsonInput.optString("status").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Status must be filled, can't be empty");
+                return response;
+            }
             regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"),
                     userOnProcess, jsonInput.optInt("region_id"));
             response.setStatus("2000");
@@ -1078,6 +1105,25 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
 
             //Branch name  check
+            if (jsonInput.optString("branch_name").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Branch name can't be empty");
+                return response;
+            }
+            if (jsonInput.optString("region_id").compareToIgnoreCase("all")==0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Can't select all, please select specific region");
+                return response;
+            }
+            if (jsonInput.optInt("region_id") == 0) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Region can't be empty");
+                return response;
+            }
+
             List<Branch> branchNameCheckResult = branchRepository.getBranchByName(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
             if (branchNameCheckResult.size() > 0) {
                 response.setStatus("0");
@@ -1323,7 +1369,7 @@ public class CmsServices {
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
-            response.setMessage(e.getMessage());
+            response.setMessage("Failed create branch : " + e.getMessage());
         }
 
         return response;
@@ -1558,6 +1604,12 @@ public class CmsServices {
                 response.setMessage("Device name already exist / used");
                 return response;
             }
+            if (jsonInput.optString("device_name").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Device name can't be empty");
+                return response;
+            }
             deviceRepository.save(jsonInput.optString("device_name"), userOnProcess);
             response.setStatus("2000");
             response.setSuccess(true);
@@ -1643,7 +1695,18 @@ public class CmsServices {
                 response.setMessage("Device name already exist / used");
                 return response;
             }
-
+            if (jsonInput.optString("device_name").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Can't update device name to empty");
+                return response;
+            }
+            if (jsonInput.optString("status").isEmpty()) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Status must be filled, can't be empty");
+                return response;
+            }
             deviceRepository.updateDevice(jsonInput.optString("device_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("device_id"));
             response.setStatus("2000");
             response.setSuccess(true);
