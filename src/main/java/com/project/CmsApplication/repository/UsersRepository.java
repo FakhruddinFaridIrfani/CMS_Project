@@ -21,6 +21,7 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
             "AND CAST(branch_id AS VARCHAR) like :branch_id " +
             "AND CAST(region_id AS VARCHAR) like :region_id " +
             "AND CAST(company_id AS VARCHAR) like :company_id " +
+            "AND CAST(role_id AS VARCHAR) like :role_id " +
             "AND lower(user_email) like lower(:user_email) " +
             "AND status like :status " +
             "AND status not in('deleted') " +
@@ -32,17 +33,20 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     List<Users> getUsersList(@Param("user_name") String user_name, @Param("user_email") String user_email,
                              @Param("status") String status, @Param("user_full_name") String user_full_name, @Param("created_by") String created_by,
                              @Param("created_date") String created_date, @Param("updated_by") String updated_by,
-                             @Param("updated_date") String updated_at, @Param("branch_id") String branch_id, @Param("region_id") String region_id, @Param("company_id") String company_id);
+                             @Param("updated_date") String updated_at, @Param("branch_id") String branch_id, @Param("region_id") String region_id, @Param("company_id") String company_id, @Param("role_id") String role_id);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Users(user_name,user_password,user_email,status,user_full_name,created_by,created_date,updated_by,updated_date,user_token,branch_id,region_id,company_id) " +
-            "VALUES(:user_name,crypt(:user_password, gen_salt('bf')),:user_email,'active',:user_full_name,:created_by,current_timestamp,:created_by,current_timestamp,:user_token,:branch_id,:region_id,:company_id)", nativeQuery = true)
+    @Query(value = "INSERT INTO cms.Users(user_name,user_password,user_email,status,user_full_name,created_by,created_date,updated_by,updated_date,user_token,branch_id,region_id,company_id,role_id) " +
+            "VALUES(:user_name,crypt(:user_password, gen_salt('bf')),:user_email,'active',:user_full_name,:created_by,current_timestamp,:created_by,current_timestamp,:user_token,:branch_id,:region_id,:company_id,:role_id)", nativeQuery = true)
     void save(@Param("user_name") String user_name, @Param("user_password") String user_password,
               @Param("user_email") String user_email, @Param("user_full_name") String user_full_name, @Param("created_by") String created_by,
-              @Param("user_token") String user_token, @Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id);
+              @Param("user_token") String user_token, @Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("role_id") int role_id);
 
     @Query(value = "SELECT * FROM cms.Users WHERE user_id =:user_id", nativeQuery = true)
     List<Users> getUsersById(@Param("user_id") int user_id);
+
+    @Query(value = "SELECT * FROM cms.Users WHERE role_id =:role_id and status <>'deleted'", nativeQuery = true)
+    List<Users> getUserByRoleId(@Param("role_id") int role_id);
 
 
     @Query(value = "SELECT * FROM cms.Users WHERE branch_id =:branch_id AND status not in('deleted')", nativeQuery = true)
@@ -60,11 +64,11 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
 
     @Modifying
     @Query(value = "UPDATE cms.Users SET user_email=:user_email," +
-            "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
+            "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,role_id=:role_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
     void updateUser(@Param("user_email") String user_email,
                     @Param("status") String status, @Param("user_full_name") String user_full_name,
                     @Param("updated_by") String updated_by, @Param("branch_id") int branch_id,
-                    @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("user_id") int user_id);
+                    @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("role_id") int role_id, @Param("user_id") int user_id);
 
     @Modifying
     @Query(value = "UPDATE cms.Users SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)

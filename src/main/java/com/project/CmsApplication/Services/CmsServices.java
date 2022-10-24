@@ -72,6 +72,9 @@ public class CmsServices {
     DeviceRepository deviceRepository;
 
     @Autowired
+    DeviceMonitoringLogRepository deviceMonitoringLogRepository;
+
+    @Autowired
     PositionRepository positionRepository;
 
     @Autowired
@@ -88,9 +91,12 @@ public class CmsServices {
 
     @Autowired
     RoleRepository roleRepository;
+//
+//    @Autowired
+//    UserRoleRepository userRoleRepository;
 
     @Autowired
-    UserRoleRepository userRoleRepository;
+    PrivilegeRepository privilegeRepository;
 
     @Autowired
     @Qualifier("entityManagerFactory")
@@ -125,7 +131,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -134,18 +140,24 @@ public class CmsServices {
             //Existing Role Name check
             List<Role> roleNameCheckResult = roleRepository.getRoleByName(jsonInput.optString("role_name"));
             if (roleNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Role name already exist / used");
                 return response;
             }
             roleRepository.save(jsonInput.optString("role_name"), userOnProcess);
-            response.setStatus("2000");
+
+            //SET DEFAULT PRIVILEGE TO INSERTED ROLE
+            Role roleInserted = roleRepository.getRoleByName(jsonInput.optString("role_name")).get(0);
+            int roleIdInserted = roleInserted.getRole_id();
+            privilegeRepository.insertGeneralMenuName(roleIdInserted);
+
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Role successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -168,7 +180,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -189,11 +201,11 @@ public class CmsServices {
             List<Role> getRoleResult = roleRepository.getRoleList(role_name, status, created_by, created_date, updated_by, updated_date);
 
             response.setData(getRoleResult);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Role Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -208,7 +220,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -217,18 +229,18 @@ public class CmsServices {
             //Existing Role Name check
             List<Role> roleNameCheckResult = roleRepository.getRoleByNameExceptId(jsonInput.optString("role_name"), jsonInput.optInt("role_id"));
             if (roleNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Role name already exist / used");
                 return response;
             }
             roleRepository.updateRole(jsonInput.optString("role_name"), jsonInput.optString("status"),
                     userOnProcess, jsonInput.optInt("role_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Role successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -243,24 +255,76 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            List<UserRole> usedRoleOnUser = userRoleRepository.getUserRoleByRoleId(jsonInput.optInt("role_id"));
+            List<Users> usedRoleOnUser = usersRepository.getUserByRoleId(jsonInput.optInt("role_id"));
             if (usedRoleOnUser.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("The role still used by " + usedRoleOnUser.size() + " user(s)");
                 return response;
             }
 
             roleRepository.deleteRole(jsonInput.optInt("role_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Role successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public Role getRoleById(int role_id) {
+
+        List<Role> roleList = roleRepository.getRoleById(role_id);
+        String role_name = roleList.get(0).getRole_name();
+
+        return roleList.get(0);
+    }
+
+    //PRIVILEGE
+    public BaseResponse<List<Map<String, Object>>> getAllPrivilege(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List result = new ArrayList();
+        JSONObject jsonInput;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("0");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                logger.info("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            List<Role> getAllRole = roleRepository.getRole();
+
+            for (int i = 0; i < getAllRole.size(); i++) {
+                Map<String, Object> resultMap = new HashMap<>();
+                List<Privilege> privileges = privilegeRepository.getPrivilegeByRoleId(getAllRole.get(i).getRole_id());
+                List<String> menuNames = new ArrayList();
+                String menu_name = privileges.get(0).getMenu_name();
+                menu_name = menu_name.replace("[", "").replace("]", "");
+                String[] menuArray = menu_name.split(",");
+                menuNames = Arrays.asList(menuArray);
+                resultMap.put("Role", getAllRole.get(i));
+                resultMap.put("Privilege", menuNames);
+                result.add(resultMap);
+            }
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Privilege Listed");
         } catch (Exception e) {
             response.setStatus("0");
             response.setSuccess(false);
@@ -269,12 +333,35 @@ public class CmsServices {
         return response;
     }
 
-    public String getRoleById(int role_id) {
+    public BaseResponse<Privilege> updatePrivilege(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+        String menu_name;
+        int role_id;
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("401");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
 
-        List<Role> roleList = roleRepository.getRoleById(role_id);
-        String role_name = roleList.get(0).getRole_name();
+            menu_name = jsonInput.optString("menu_name");
+            role_id = jsonInput.optInt("role_id");
 
-        return role_name;
+            privilegeRepository.updatePrivilegeMenuName(menu_name, userOnProcess, role_id);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Previlege successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
     }
 
 
@@ -287,9 +374,10 @@ public class CmsServices {
             int branch_id;
             int region_id;
             int company_id;
+            int role_id;
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -300,7 +388,7 @@ public class CmsServices {
             //user_name check
             List<Users> userNameCheckResult = usersRepository.getUsersByName(jsonInput.optString("user_name"));
             if (userNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("User name already exist / used");
                 return response;
@@ -308,16 +396,23 @@ public class CmsServices {
             branch_id = jsonInput.optInt("branch_id");
             region_id = jsonInput.optInt("region_id");
             company_id = jsonInput.optInt("company_id");
+            role_id = jsonInput.optInt("role_id");
+            if (role_id == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("User role can't be empty");
+                return response;
+            }
 
             usersRepository.save(jsonInput.optString("user_name"),
                     jsonInput.optString("user_password"), jsonInput.optString("user_email"),
-                    jsonInput.optString("user_full_name"), userOnProcess, userToken, branch_id, region_id, company_id);
-            response.setStatus("2000");
+                    jsonInput.optString("user_full_name"), userOnProcess, userToken, branch_id, region_id, company_id, role_id);
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -325,14 +420,16 @@ public class CmsServices {
         return response;
     }
 
-    public BaseResponse<List<Users>> getUsers(String input) throws Exception, SQLException {
+    public BaseResponse<List<Map<String, Object>>> getUsers(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
         String branch_id;
         String region_id;
         String company_id;
+        String role_id;
         String user_name;
         String user_email;
         String user_full_name;
@@ -344,7 +441,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -374,19 +471,32 @@ public class CmsServices {
             if (company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
                 company_id = "%%";
             }
+            role_id = jsonInput.optInt("role_id") + "";
+            if (role_id.compareToIgnoreCase("null") == 0 || role_id.compareToIgnoreCase("0") == 0) {
+                role_id = "%%";
+            }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date, branch_id, region_id, company_id);
+            List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date, branch_id, region_id, company_id, role_id);
+            for (int i = 0; i < getUserResult.size(); i++) {
+                Map<String, Object> resultMap = new HashMap<>();
+                List<Role> roles = roleRepository.getRoleById(getUserResult.get(i).getRole_id());
+                resultMap.put("User", getUserResult.get(i));
+                resultMap.put("Role", roles.get(0));
+                result.add(resultMap);
+            }
+
+
             for (int i = 0; i < getUserResult.size(); i++) {
                 getUserResult.get(i).setUser_password("null");
             }
-            response.setData(getUserResult);
+            response.setData(result);
 
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -401,30 +511,37 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
 //            List<Users> userNameCheckResult = usersRepository.getUsersByNameExceptId(jsonInput.optString("user_name"), jsonInput.optInt("user_id"));
 //            if (userNameCheckResult.size() > 0) {
-//                response.setStatus("0");
+//                response.setStatus("500");
 //                response.setSuccess(false);
 //                response.setMessage("User name already exist / used");
 //                return response;
 //            }
             String userOnProcess = auth.get("user_name").toString();
+            if (jsonInput.optInt("role_id") == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("User role can't be empty");
+                return response;
+            }
+
             usersRepository.updateUser(jsonInput.optString("user_email"),
                     jsonInput.optString("status"), jsonInput.optString("user_full_name"),
                     userOnProcess, jsonInput.optInt("branch_id"),
-                    jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("user_id"));
-            response.setStatus("2000");
+                    jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("role_id"), jsonInput.optInt("user_id"));
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User successfully Updated");
 
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -441,19 +558,18 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
             usersRepository.deleteUser(jsonInput.optInt("user_id"), userOnProcess);
-            userRoleRepository.deleteUserRoleByUserId(jsonInput.optInt("user_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -464,7 +580,6 @@ public class CmsServices {
         BaseResponse response = new BaseResponse();
         Map<String, Object> result = new HashMap<>();
         List<Users> dataLoginUser;
-        List<Map> user_role = new ArrayList<>();
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -472,7 +587,7 @@ public class CmsServices {
             List<Users> userNameCheckResult = usersRepository.getUsersByName(jsonInput.optString("user_name"));
             if (userNameCheckResult.size() > 0) {
                 if (userNameCheckResult.get(0).getStatus().compareToIgnoreCase("active") != 0) {
-                    response.setStatus("0");
+                    response.setStatus("500");
                     response.setSuccess(false);
                     response.setMessage("Failed to login. User no longer exist");
                     return response;
@@ -480,35 +595,36 @@ public class CmsServices {
             }
             dataLoginUser = usersRepository.loginUser(jsonInput.optString("user_name"), jsonInput.optString("user_email"), jsonInput.optString("user_password"));
             if (dataLoginUser.size() == 0) {
-                response.setStatus("0");
+                response.setStatus("401");
                 response.setSuccess(false);
                 response.setMessage("Failed to login. wrong User Name, Email, or Password");
                 return response;
             }
 
-            List<Integer> userRoleId = getUserRoleByUserId(dataLoginUser.get(0).getUser_id());
-            for (int i = 0; i < userRoleId.size(); i++) {
-                int current_id = userRoleId.get(i);
-                Map user_role_name = new HashMap();
-                user_role_name.put("role_id", current_id);
-                user_role_name.put("role_name", getRoleById(current_id));
-                user_role.add(user_role_name);
+            for (int i = 0; i < dataLoginUser.size(); i++) {
+                List<Role> roles = roleRepository.getRoleById(dataLoginUser.get(i).getRole_id());
+                List<Privilege> privileges = privilegeRepository.getPrivilegeByRoleId(roles.get(0).getRole_id());
+                List<String> menuNames = new ArrayList();
+                String menu_name = privileges.get(0).getMenu_name();
+                menu_name = menu_name.replace("[", "").replace("]", "");
+                String[] menuArray = menu_name.split(",");
+                menuNames = Arrays.asList(menuArray);
+                result.put("User", dataLoginUser.get(i));
+                result.put("Role", roles.get(0));
+                result.put("Privilege", menuNames);
             }
 
             for (int i = 0; i < dataLoginUser.size(); i++) {
                 dataLoginUser.get(i).setUser_password("null");
             }
 
-            result.put("user_data", dataLoginUser);
-            result.put("user_role", user_role);
-
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Login Success !!");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -524,17 +640,17 @@ public class CmsServices {
             JSONObject jsonInput = new JSONObject(input);
             dataLoginUser = usersRepository.loginUser(jsonInput.optString("user_name"), jsonInput.optString("user_email"), jsonInput.optString("user_password"));
             if (dataLoginUser.size() == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Wrong current password");
                 return response;
             }
             usersRepository.changeUsersPassword(jsonInput.optInt("user_id"), jsonInput.optString("new_user_password"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Password Changed !!");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -542,155 +658,155 @@ public class CmsServices {
     }
 
 
-    //USER-ROLE SECTION
-    public BaseResponse<String> addNewUserRole(String input) throws Exception, SQLException {
-        BaseResponse response = new BaseResponse<>();
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-            //Token Auth
-            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
-                response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
-                return response;
-            }
-            String userOnProcess = auth.get("user_name").toString();
+//    //USER-ROLE SECTION
+//    public BaseResponse<String> addNewUserRole(String input) throws Exception, SQLException {
+//        BaseResponse response = new BaseResponse<>();
+//        try {
+//            JSONObject jsonInput = new JSONObject(input);
+//            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+//            //Token Auth
+//            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+//                response.setStatus("500");
+//                response.setSuccess(false);
+//                response.setMessage("Token Authentication Failed");
+//                return response;
+//            }
+//            String userOnProcess = auth.get("user_name").toString();
+//
+//            userRoleRepository.save(jsonInput.optInt("user_id"), jsonInput.optInt("role_id"), userOnProcess);
+//            response.setStatus("200");
+//            response.setSuccess(true);
+//            response.setMessage("User Role successfully created");
+//
+//        } catch (Exception e) {
+//            response.setStatus("500");
+//            response.setSuccess(false);
+//            response.setMessage(e.getMessage());
+//        }
+//
+//        return response;
+//    }
+//
+//    public BaseResponse<List<Map<String, Object>>> getUserRole(String input) throws Exception, SQLException {
+//        BaseResponse response = new BaseResponse<>();
+//        List<Map<String, Object>> result = new ArrayList<>();
+//        JSONObject jsonInput;
+//        String created_date = "%%";
+//        String updated_date = "%%";
+//        String user_id;
+//        String role_id;
+//        String status;
+//        String created_by;
+//        String updated_by;
+//        try {
+//            jsonInput = new JSONObject(input);
+//            if (jsonInput.optString("created_date").length() > 0) {
+//                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+//            }
+//            if (jsonInput.optString("updated_date").length() > 0) {
+//                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+//            }
+//            user_id = jsonInput.optInt("user_id") + "";
+//            if (user_id.isEmpty() || user_id.compareToIgnoreCase("null") == 0 || user_id.compareToIgnoreCase("0") == 0) {
+//                user_id = "%%";
+//            }
+//            role_id = jsonInput.optInt("role_id") + "";
+//            if (role_id.isEmpty() || role_id.compareToIgnoreCase("null") == 0 || role_id.compareToIgnoreCase("0") == 0) {
+//                role_id = "%%";
+//            }
+//            status = jsonInput.optString("status");
+//            if (status.isEmpty()) {
+//                status = "%%";
+//            }
+//            created_by = "%" + jsonInput.optString("created_by") + "%";
+//            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+//            List<UserRole> userRoleList = userRoleRepository.getUserRoleList(user_id, role_id, status, created_by,
+//                    created_date, updated_by, updated_date);
+//            for (int i = 0; i < userRoleList.size(); i++) {
+//                Map resultMap = new HashMap();
+//                List<Role> roles = roleRepository.getRoleById(userRoleList.get(i).getRole_id());
+//                resultMap.put("role", roles.get(0));
+//                resultMap.put("user_role", userRoleList.get(i));
+//
+//                result.add(resultMap);
+//            }
+//
+//            response.setData(result);
+//            response.setStatus("200");
+//            response.setSuccess(true);
+//            response.setMessage("User Role Listed");
+//        } catch (Exception e) {
+//            response.setStatus("500");
+//            response.setSuccess(false);
+//            response.setMessage(e.getMessage());
+//        }
+//        return response;
+//    }
+//
+//    public BaseResponse<UserRole> updateUserRole(String input) throws Exception, SQLException {
+//        BaseResponse response = new BaseResponse();
+//
+//        try {
+//            JSONObject jsonInput = new JSONObject(input);
+//            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+//
+//            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+//                response.setStatus("500");
+//                response.setSuccess(false);
+//                response.setMessage("Token Authentication Failed");
+//                return response;
+//            }
+//            String userOnProcess = auth.get("user_name").toString();
+//            userRoleRepository.updateUserRole(jsonInput.optInt("role_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("user_role_id"));
+//            response.setStatus("200");
+//            response.setSuccess(true);
+//            response.setMessage("User Role successfully Updated");
+//
+//
+//        } catch (Exception e) {
+//            response.setStatus("500");
+//            response.setSuccess(false);
+//            response.setMessage(e.getMessage());
+//        }
+//
+//
+//        return response;
+//    }
+//
+//    public BaseResponse<UserRole> deleteUserRole(String input) throws Exception, SQLException {
+//        BaseResponse response = new BaseResponse();
+//
+//        try {
+//            JSONObject jsonInput = new JSONObject(input);
+//            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+//
+//            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+//                response.setStatus("500");
+//                response.setSuccess(false);
+//                response.setMessage("Token Authentication Failed");
+//                return response;
+//            }
+//            String userOnProcess = auth.get("user_name").toString();
+//            userRoleRepository.deleteUserRole(jsonInput.optInt("user_role_id"), userOnProcess);
+//            response.setStatus("200");
+//            response.setSuccess(true);
+//            response.setMessage("User-Role successfully deleted");
+//        } catch (Exception e) {
+//            response.setStatus("500");
+//            response.setSuccess(false);
+//            response.setMessage(e.getMessage());
+//        }
+//        return response;
+//    }
 
-            userRoleRepository.save(jsonInput.optInt("user_id"), jsonInput.optInt("role_id"), userOnProcess);
-            response.setStatus("2000");
-            response.setSuccess(true);
-            response.setMessage("User Role successfully created");
-
-        } catch (Exception e) {
-            response.setStatus("0");
-            response.setSuccess(false);
-            response.setMessage(e.getMessage());
-        }
-
-        return response;
-    }
-
-    public BaseResponse<List<Map<String, Object>>> getUserRole(String input) throws Exception, SQLException {
-        BaseResponse response = new BaseResponse<>();
-        List<Map<String, Object>> result = new ArrayList<>();
-        JSONObject jsonInput;
-        String created_date = "%%";
-        String updated_date = "%%";
-        String user_id;
-        String role_id;
-        String status;
-        String created_by;
-        String updated_by;
-        try {
-            jsonInput = new JSONObject(input);
-            if (jsonInput.optString("created_date").length() > 0) {
-                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
-            }
-            if (jsonInput.optString("updated_date").length() > 0) {
-                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
-            }
-            user_id = jsonInput.optInt("user_id") + "";
-            if (user_id.isEmpty() || user_id.compareToIgnoreCase("null") == 0 || user_id.compareToIgnoreCase("0") == 0) {
-                user_id = "%%";
-            }
-            role_id = jsonInput.optInt("role_id") + "";
-            if (role_id.isEmpty() || role_id.compareToIgnoreCase("null") == 0 || role_id.compareToIgnoreCase("0") == 0) {
-                role_id = "%%";
-            }
-            status = jsonInput.optString("status");
-            if (status.isEmpty()) {
-                status = "%%";
-            }
-            created_by = "%" + jsonInput.optString("created_by") + "%";
-            updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<UserRole> userRoleList = userRoleRepository.getUserRoleList(user_id, role_id, status, created_by,
-                    created_date, updated_by, updated_date);
-            for (int i = 0; i < userRoleList.size(); i++) {
-                Map resultMap = new HashMap();
-                List<Role> roles = roleRepository.getRoleById(userRoleList.get(i).getRole_id());
-                resultMap.put("role", roles.get(0));
-                resultMap.put("user_role", userRoleList.get(i));
-
-                result.add(resultMap);
-            }
-
-            response.setData(result);
-            response.setStatus("2000");
-            response.setSuccess(true);
-            response.setMessage("User Role Listed");
-        } catch (Exception e) {
-            response.setStatus("0");
-            response.setSuccess(false);
-            response.setMessage(e.getMessage());
-        }
-        return response;
-    }
-
-    public BaseResponse<UserRole> updateUserRole(String input) throws Exception, SQLException {
-        BaseResponse response = new BaseResponse();
-
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-
-            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
-                response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
-                return response;
-            }
-            String userOnProcess = auth.get("user_name").toString();
-            userRoleRepository.updateUserRole(jsonInput.optInt("role_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("user_role_id"));
-            response.setStatus("2000");
-            response.setSuccess(true);
-            response.setMessage("User Role successfully Updated");
-
-
-        } catch (Exception e) {
-            response.setStatus("0");
-            response.setSuccess(false);
-            response.setMessage(e.getMessage());
-        }
-
-
-        return response;
-    }
-
-    public BaseResponse<UserRole> deleteUserRole(String input) throws Exception, SQLException {
-        BaseResponse response = new BaseResponse();
-
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-
-            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
-                response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
-                return response;
-            }
-            String userOnProcess = auth.get("user_name").toString();
-            userRoleRepository.deleteUserRole(jsonInput.optInt("user_role_id"), userOnProcess);
-            response.setStatus("2000");
-            response.setSuccess(true);
-            response.setMessage("User-Role successfully deleted");
-        } catch (Exception e) {
-            response.setStatus("0");
-            response.setSuccess(false);
-            response.setMessage(e.getMessage());
-        }
-        return response;
-    }
-
-    public List<Integer> getUserRoleByUserId(int user_id) {
-        List<UserRole> userRoleList = userRoleRepository.getUserRoleByUserId(user_id);
-        List<Integer> roleIdList = new ArrayList<>();
-        for (UserRole role : userRoleList) {
-            roleIdList.add(role.getRole_id());
-        }
-        return roleIdList;
-    }
+//    public List<Integer> getUserRoleByUserId(int user_id) {
+//        List<UserRole> userRoleList = userRoleRepository.getUserRoleByUserId(user_id);
+//        List<Integer> roleIdList = new ArrayList<>();
+//        for (UserRole role : userRoleList) {
+//            roleIdList.add(role.getRole_id());
+//        }
+//        return roleIdList;
+//    }
 
     //COMPANY SECTION
     public BaseResponse<String> addNewCompany(String input) throws Exception {
@@ -700,7 +816,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -709,7 +825,7 @@ public class CmsServices {
 
             //company name  check
             if (jsonInput.optString("company_name").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Company name can't be empty");
                 return response;
@@ -718,7 +834,7 @@ public class CmsServices {
 
             List<Company> companyNameCheckResult = companyRepository.getCompanyByName(jsonInput.optString("company_name"));
             if (companyNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Company name already exist / used");
                 return response;
@@ -726,12 +842,12 @@ public class CmsServices {
 
             companyRepository.save(jsonInput.optString("company_name"), jsonInput.optString("company_address"),
                     jsonInput.optString("company_phone"), jsonInput.optString("company_email"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Company successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -757,7 +873,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -786,11 +902,11 @@ public class CmsServices {
                     status, created_by, created_date, updated_by, updated_date);
             response.setData(getCompanyResult);
 
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Company Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -805,7 +921,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -814,18 +930,18 @@ public class CmsServices {
             //company name  check
             List<Company> companyNameCheckResult = companyRepository.getCompanyByNameExceptId(jsonInput.optString("company_name"), jsonInput.optInt("company_id"));
             if (companyNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Company name already exist / used");
                 return response;
             }
             companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phone"),
                     jsonInput.optString("company_email"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("company_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Company successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -842,7 +958,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -852,18 +968,18 @@ public class CmsServices {
             //Check region of company
             List<Region> usedCompanyOnRegion = regionRepository.getRegionByCompanyId(jsonInput.optInt("company_id"));
             if (usedCompanyOnRegion.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("The company still has " + usedCompanyOnRegion.size() + " region(s)");
                 return response;
             }
 
             companyRepository.deleteCompany(jsonInput.optInt("company_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -890,7 +1006,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -899,31 +1015,31 @@ public class CmsServices {
 
             //Region name  check
             if (jsonInput.optString("region_name").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region name can't be empty");
                 return response;
             }
             if (jsonInput.optInt("company_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Company can't be empty");
                 return response;
             }
             List<Region> regionNameCheckResult = regionRepository.getRegionByName(jsonInput.optString("region_name"), jsonInput.optInt("company_id"));
             if (regionNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region name already exist / used");
                 return response;
             }
             regionRepository.save(jsonInput.optInt("company_id"), jsonInput.optString("region_name"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create Region : " + e.getMessage());
         }
@@ -948,7 +1064,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -988,11 +1104,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1007,7 +1123,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1016,24 +1132,24 @@ public class CmsServices {
             //Region name  check
             List<Region> regionNameCheckResult = regionRepository.getRegionByNameExceptId(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optInt("region_id"));
             if (regionNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region name already exist / used");
                 return response;
             }
             if (jsonInput.optString("status").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Status must be filled, can't be empty");
                 return response;
             }
             regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"),
                     userOnProcess, jsonInput.optInt("region_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1050,7 +1166,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1060,17 +1176,17 @@ public class CmsServices {
             //Check branch of region
             List<Branch> usedRegionOnBranch = branchRepository.getBranchByRegionId(jsonInput.optInt("region_id"));
             if (usedRegionOnBranch.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("The Region still has " + usedRegionOnBranch.size() + " branch(es)");
                 return response;
             }
             regionRepository.deleteRegion(jsonInput.optInt("region_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1097,7 +1213,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1106,19 +1222,19 @@ public class CmsServices {
 
             //Branch name  check
             if (jsonInput.optString("branch_name").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Branch name can't be empty");
                 return response;
             }
-            if (jsonInput.optString("region_id").compareToIgnoreCase("all")==0) {
-                response.setStatus("0");
+            if (jsonInput.optString("region_id").compareToIgnoreCase("all") == 0) {
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Can't select all, please select specific region");
                 return response;
             }
             if (jsonInput.optInt("region_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region can't be empty");
                 return response;
@@ -1126,19 +1242,19 @@ public class CmsServices {
 
             List<Branch> branchNameCheckResult = branchRepository.getBranchByName(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
             if (branchNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Branch name already exist / used");
                 return response;
             }
 
             branchRepository.save(jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("branch_name"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1164,7 +1280,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1211,11 +1327,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1230,7 +1346,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1240,7 +1356,7 @@ public class CmsServices {
             //Branch name  check
             List<Branch> branchNameCheckResult = branchRepository.getBranchByNameExceptId(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("branch_id"));
             if (branchNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Branch name already exist / used");
                 return response;
@@ -1248,11 +1364,11 @@ public class CmsServices {
 
             branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"),
                     jsonInput.optString("status"), userOnProcess, jsonInput.optInt("branch_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1269,7 +1385,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1279,7 +1395,7 @@ public class CmsServices {
             //Check promo of branch
             List<Promo> usedBranchOnPromo = promoRepository.getPromoByBranchId(jsonInput.optInt("branch_id"));
             if (usedBranchOnPromo.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("The Branch still has " + usedBranchOnPromo.size() + " promo(s)");
                 return response;
@@ -1288,7 +1404,7 @@ public class CmsServices {
             //Check playlist of branch
             List<Playlist> usedBranchOnPlaylist = playlistRepository.getPlaylistByBranchId(jsonInput.optInt("branch_id"));
             if (usedBranchOnPlaylist.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("The Branch still has " + usedBranchOnPlaylist.size() + " playlist(s)");
                 return response;
@@ -1296,11 +1412,11 @@ public class CmsServices {
 
 
             branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1327,7 +1443,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1337,7 +1453,7 @@ public class CmsServices {
             //Promo tittle  check
             List<Promo> promoTittleCheckResult = promoRepository.getPromoByTittle(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
             if (promoTittleCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Promo Tittle already exist / used");
                 return response;
@@ -1355,19 +1471,19 @@ public class CmsServices {
             }
 
             if (jsonInput.optInt("company_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Unknown company, please choose existing company.");
                 return response;
             }
             promoRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess, thumbnail);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Promo successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create branch : " + e.getMessage());
         }
@@ -1399,7 +1515,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1485,11 +1601,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Promo Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1504,7 +1620,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1513,7 +1629,7 @@ public class CmsServices {
             //Promo tittle  check
             List<Promo> promoTittleCheckResult = promoRepository.getPromoByTittleExceptId(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("promo_id"));
             if (promoTittleCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Promo Tittle already exist / used");
                 return response;
@@ -1527,7 +1643,7 @@ public class CmsServices {
 
             }
             if (jsonInput.optInt("company_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Unknown company, please choose existing company.");
                 return response;
@@ -1535,11 +1651,11 @@ public class CmsServices {
             promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
                     jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"), thumbnail);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Promo successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1556,18 +1672,18 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
             promoRepository.deletePromo(jsonInput.optInt("promo_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Promo successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1589,7 +1705,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1599,24 +1715,24 @@ public class CmsServices {
             //Device name  check
             List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(jsonInput.optString("device_name"));
             if (deviceNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Device name already exist / used");
                 return response;
             }
             if (jsonInput.optString("device_name").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Device name can't be empty");
                 return response;
             }
             deviceRepository.save(jsonInput.optString("device_name"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1639,7 +1755,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1661,11 +1777,11 @@ public class CmsServices {
 
 
             response.setData(getDeviceResult);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1680,7 +1796,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1690,29 +1806,29 @@ public class CmsServices {
             //Device name  check
             List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(jsonInput.optString("device_name"), jsonInput.optInt("device_id"));
             if (deviceNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Device name already exist / used");
                 return response;
             }
             if (jsonInput.optString("device_name").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Can't update device name to empty");
                 return response;
             }
             if (jsonInput.optString("status").isEmpty()) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Status must be filled, can't be empty");
                 return response;
             }
             deviceRepository.updateDevice(jsonInput.optString("device_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("device_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1729,7 +1845,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1739,19 +1855,112 @@ public class CmsServices {
             //Check position of device
             List<Position> devicePosition = positionRepository.getPositionByDeviceId(jsonInput.optInt("device_id"));
             if (devicePosition.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Device still has " + devicePosition.size() + " position(s)");
                 return response;
             }
             deviceRepository.deleteDevice(jsonInput.optInt("device_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse generateLicenseKey(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            int device_id = jsonInput.getInt("device_id");
+
+            String licenseKey = Long.toHexString(new Date().getTime());
+
+            List<Device> checkIsLicenseAlreadyGenerated = deviceRepository.getDeviceById(device_id);
+            if (!checkIsLicenseAlreadyGenerated.get(0).getLicense_key().isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Failed to generate license key, this device already has license key");
+                return response;
+            }
+
+            deviceRepository.updateLicenseKey(device_id, licenseKey, userOnProcess);
+            response.setData(licenseKey);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("License key generated");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage("Failed to generate license key :" + e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse checkDeviceUniqueId(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            String device_unique_id = jsonInput.getString("device_unique_id");
+            List<Device> checkedDeviceList = deviceRepository.checkDeviceUniqueId(device_unique_id);
+            if (checkedDeviceList.size() > 0) {
+                response.setData(checkedDeviceList.get(0).getDevice_id());
+                response.setStatus("200");
+                response.setSuccess(true);
+                response.setMessage("Device already registered");
+            } else {
+                response.setStatus("404");
+                response.setSuccess(false);
+                response.setMessage("device is not registered yet, please enter security code");
+            }
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse authLicenseKeyAndDeviceUniqueId(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            String license_key = jsonInput.getString("license_key");
+            String device_unique_id = jsonInput.getString("device_unique_id");
+
+            List<Device> checkedLicenseKey = deviceRepository.checkLicenseKeyUsed(license_key);
+            if (checkedLicenseKey.size() > 0) {
+                deviceRepository.updateLicenseKeyDeviceUniqueIdPair(checkedLicenseKey.get(0).getDevice_id(), device_unique_id);
+            } else {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Wrong license key or license key already used");
+                return response;
+            }
+            response.setData(checkedLicenseKey.get(0).getDevice_id());
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Device successfully registered");
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage("Failed to check license key :" + e.getMessage());
         }
         return response;
     }
@@ -1776,7 +1985,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1784,12 +1993,12 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
             positionRepository.save(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
                     jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("measurement"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1818,7 +2027,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1861,11 +2070,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1880,7 +2089,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1889,11 +2098,11 @@ public class CmsServices {
             positionRepository.updatePosition(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
                     jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("status"),
                     jsonInput.optString("measurement"), userOnProcess, jsonInput.optInt("position_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1910,7 +2119,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -1920,18 +2129,18 @@ public class CmsServices {
             //Check playlist use this position
             List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByPositionId(jsonInput.optInt("position_id"));
             if (usedPositionOnPlaylist.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Position still used on " + usedPositionOnPlaylist.size() + " playlist(s)");
                 return response;
             }
 
             positionRepository.deletePosition(jsonInput.optInt("position_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1953,17 +2162,24 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
 
+            if (jsonInput.optString("resource_name").isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Resource name can't be empty");
+                return response;
+            }
+
             //Resource name  check
             List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(jsonInput.optString("resource_name"));
             if (resourceNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Resource name already exist / used");
                 return response;
@@ -1980,12 +2196,12 @@ public class CmsServices {
             }
             resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail,
                     file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), userOnProcess, jsonInput.optString("url_resource"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -1993,9 +2209,9 @@ public class CmsServices {
         return response;
     }
 
-    public BaseResponse<List<Resource>> getResourceList(String input) throws Exception, SQLException {
+    public BaseResponse getResourceList(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse<>();
-        List<Map<String, Object>> result = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
@@ -2008,12 +2224,16 @@ public class CmsServices {
         String status;
         String created_by;
         String updated_by;
+        int limit = 0;
+        int offset = 0;
+        int startingData = 0;
+        List<Resource> resourceListPaged = new ArrayList<>();
         try {
             jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2039,9 +2259,17 @@ public class CmsServices {
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            limit = jsonInput.getInt("limit");
+            offset = jsonInput.getInt("offset");
+            startingData = (offset - 1) * limit;
             List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
                     stretch, status, created_by, created_date, updated_by, updated_date);
-            for (Resource resource : getResourceResult) {
+            int maxPage = (int) Math.ceil(getResourceResult.size() / (limit * 1.0));
+            if (getResourceResult.size() > 0) {
+                resourceListPaged = getResourceResult.subList(startingData, Math.min((startingData + limit), getResourceResult.size()));
+            }
+
+            for (Resource resource : resourceListPaged) {
                 if (!resource.getThumbnail().isEmpty()) {
                     try {
                         resource.setThumbnail(getFile(resource.getThumbnail(), "resource").getData().get("file_base64").toString());
@@ -2050,13 +2278,15 @@ public class CmsServices {
                     }
                 }
             }
+            result.put("resourceData", resourceListPaged);
+            result.put("maxPage", maxPage);
 
-            response.setData(getResourceResult);
-            response.setStatus("2000");
+            response.setData(result);
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2071,7 +2301,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2080,7 +2310,7 @@ public class CmsServices {
             //Resource name  check
             List<Resource> resourceNameCheckResult = resourceRepository.getResourceByNameExceptId(jsonInput.optString("resource_name"), jsonInput.optInt("resource_id"));
             if (resourceNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Resource name already exist / used");
                 return response;
@@ -2094,11 +2324,11 @@ public class CmsServices {
             }
             resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail, file,
                     jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"), jsonInput.optString("url_resource"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2115,7 +2345,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2125,18 +2355,18 @@ public class CmsServices {
             //Check playlist use this resource
             List<PlaylistResource> usedResourceOnPlaylist = playlistResourceRepository.getPlaylistResourceByResourceId(jsonInput.optInt("resource_id"));
             if (usedResourceOnPlaylist.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Resource still used on " + usedResourceOnPlaylist.size() + " playlist(s)");
                 return response;
             }
 
             resourceRepository.deleteResource(jsonInput.optInt("resource_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2163,7 +2393,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2173,7 +2403,7 @@ public class CmsServices {
             //Playlist name  check
             List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
             if (playlistNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Playlist name already exist / used");
                 return response;
@@ -2184,8 +2414,19 @@ public class CmsServices {
             if (latestSort.size() > 0) {
                 currentSort = latestSort.get(0).getSort() + 1;
             }
+            boolean is_default;
+            String is_defaultStr = jsonInput.optString("is_default");
+            if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Is default is empty, Playlist must define as default or not");
+                return response;
+            } else {
+                is_default = Boolean.valueOf(is_defaultStr);
+            }
+
             playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
-                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), currentSort, userOnProcess);
+                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), currentSort, is_default, userOnProcess);
 
             //Inserting resource to playlist_resource
             JSONArray playlistResourceItem = jsonInput.getJSONArray("resource_list");
@@ -2197,12 +2438,12 @@ public class CmsServices {
             }
 
 
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist successfully Added with " + playlistResourceItem.length() + " resource");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2221,6 +2462,7 @@ public class CmsServices {
         String region_id;
         String company_id;
         String position_id;
+        String is_default;
 
         String start_date;
         String end_date;
@@ -2233,7 +2475,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2264,7 +2506,10 @@ public class CmsServices {
 
             start_date = "%" + jsonInput.optString("start_date") + "%";
             end_date = "%" + jsonInput.optString("end_date") + "%";
-
+            is_default = jsonInput.optString("is_default") + "";
+            if (is_default.isEmpty() || is_default.compareToIgnoreCase("null") == 0) {
+                is_default = "%%";
+            }
             sort = jsonInput.optInt("sort") + "";
             if (sort.isEmpty() || sort.compareToIgnoreCase("null") == 0 || sort.compareToIgnoreCase("0") == 0) {
                 sort = "%%";
@@ -2276,9 +2521,12 @@ public class CmsServices {
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Playlist> getResultPlayList = playlistRepository.getPlaylistList(playlist_name, branch_id, region_id, company_id, position_id, start_date,
-                    end_date, sort, status, created_by, created_date, updated_by, updated_date);
+                    end_date, sort, status, is_default, created_by, created_date, updated_by, updated_date);
+            logger.info("playlist_name: " + playlist_name + ",branch_id: " + branch_id + ",region_id: " + region_id + ",company_id:" + company_id + ",position_id: " + position_id + ",start_date: " + start_date +
+                    ",end_date: " + end_date + ",sort: " + sort + ",status: " + status + ",is_default: " + is_default + ",created_by: " + created_by + ",created_date: " + created_date + ",updated_by: " + updated_by + ",updated_date: " + updated_date);
 
             for (int i = 0; i < getResultPlayList.size(); i++) {
+                logger.info("playlist count : " + getResultPlayList);
                 Map resultMap = new HashMap();
                 if (getResultPlayList.get(i).getBranch_id() != 0) {
                     List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
@@ -2289,6 +2537,7 @@ public class CmsServices {
                     branch.setBranch_name("All Branches");
                     resultMap.put("branch", branch);
                 }
+                logger.info("branch ok");
                 if (getResultPlayList.get(i).getRegion_id() != 0) {
                     List<Region> regions = regionRepository.getRegionById(getResultPlayList.get(i).getRegion_id());
                     resultMap.put("region", regions.get(0));
@@ -2298,15 +2547,18 @@ public class CmsServices {
                     region.setRegion_name("All Regions");
                     resultMap.put("region", region);
                 }
+                logger.info("region ok");
                 if (getResultPlayList.get(i).getCompany_id() != 0) {
                     List<Company> companies = companyRepository.getCompanyById(getResultPlayList.get(i).getCompany_id());
                     resultMap.put("company", companies.get(0));
                 } else {
                     resultMap.put("company", "All Companies");
                 }
-
+                logger.info("company ok");
                 List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
+                logger.info("position ok");
                 List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getDevice_id());
+                logger.info("device ok");
 
 
                 resultMap.put("device", devices.get(0));
@@ -2318,11 +2570,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2337,7 +2589,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2347,20 +2599,31 @@ public class CmsServices {
             //Playlist name  check
             List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByNameExceptId(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("playlist_id"));
             if (playlistNameCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Playlist name already exist / used");
                 return response;
             }
 
+            boolean is_default;
+            String is_defaultStr = jsonInput.optString("is_default");
+            if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Is default is empty, Playlist must define as default or not");
+                return response;
+            } else {
+                is_default = Boolean.valueOf(is_defaultStr);
+            }
+
             playlistRepository.updatePlaylist(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
-                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), jsonInput.optString("status"),
+                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), jsonInput.optString("status"), is_default,
                     userOnProcess, jsonInput.optInt("playlist_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2377,18 +2640,18 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
             playlistRepository.deletePlaylist(jsonInput.optInt("playlist_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2415,7 +2678,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(userToken);
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2423,12 +2686,12 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
 
             playlistResourceRepository.save(playlist_id, resource_id, order, userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist add resource successfully");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2455,11 +2718,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("PlaylistResource Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2474,7 +2737,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2485,11 +2748,11 @@ public class CmsServices {
                 JSONObject obj = playlistResourceItem.getJSONObject(i);
                 playlistResourceRepository.updatePlaylistResource(obj.optInt("order"), obj.optInt("playlist_resource_id"), userOnProcess);
             }
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2506,7 +2769,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2518,11 +2781,11 @@ public class CmsServices {
                 playlistResourceRepository.deletePlaylistResource(obj.optInt("playlist_resource_id"));
             }
 
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2537,7 +2800,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2547,25 +2810,25 @@ public class CmsServices {
             //RunningText tittle  check
             List<RunningText> runningTextTittleCheckResult = runningTextRepository.getRunningTextByTittle(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
             if (runningTextTittleCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("RunningText Tittle already exist / used");
                 return response;
             }
             if (jsonInput.optInt("company_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Unknown company, please choose existing company.");
                 return response;
             }
             runningTextRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
                     jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText successfully Added");
 
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2595,7 +2858,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2667,11 +2930,11 @@ public class CmsServices {
 
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText Listed");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2686,7 +2949,7 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
@@ -2695,13 +2958,13 @@ public class CmsServices {
             //RunningText tittle  check
             List<RunningText> running_textTittleCheckResult = runningTextRepository.getRunningTextByTittleExceptId(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("running_text_id"));
             if (running_textTittleCheckResult.size() > 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("RunningText Tittle already exist / used");
                 return response;
             }
             if (jsonInput.optInt("company_id") == 0) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Unknown company, please choose existing company.");
                 return response;
@@ -2709,11 +2972,11 @@ public class CmsServices {
             runningTextRepository.updateRunningText(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
                     jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
                     jsonInput.optString("status"), userOnProcess, jsonInput.optInt("running_text_id"));
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText successfully Updated");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2730,18 +2993,18 @@ public class CmsServices {
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
             runningTextRepository.deleteRunningText(jsonInput.optInt("running_text_id"), userOnProcess);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText successfully deleted");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
@@ -2754,6 +3017,108 @@ public class CmsServices {
         return getRunningTextResult;
     }
 
+
+    //DEVICE MONITORING LOG SECTION
+    public BaseResponse<List<Device>> getDeviceListFromPlaylist(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        String branch_id;
+        String region_id;
+        String company_id;
+        String userToken;
+        List<Device> deviceList;
+        JSONObject jsonInput;
+        try {
+            jsonInput = new JSONObject(input);
+            userToken = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(userToken);
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+
+            deviceList = deviceRepository.getDeviceListFromPlaylist(branch_id, region_id, company_id);
+
+            response.setData(deviceList);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Device Listed");
+        } catch (Exception e) {
+            response.setData(new ArrayList<>());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse getDeviceMonitoringLog(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        Map<String, Object> result = new HashMap<>();
+        String userToken;
+        int device_id;
+        int limit = 0;
+        int offset = 0;
+        int startingData = 0;
+        List<DeviceMonitoringLog> logList;
+        List<DeviceMonitoringLog> logListPaged = new ArrayList<>();
+        JSONObject jsonInput;
+        try {
+            jsonInput = new JSONObject(input);
+            userToken = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(userToken);
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            device_id = jsonInput.optInt("device_id");
+            limit = jsonInput.getInt("limit");
+            offset = jsonInput.getInt("offset");
+            startingData = (offset - 1) * limit;
+            logList = deviceMonitoringLogRepository.getDeviceMonitoringLogList(device_id);
+            int maxPage = (int) Math.ceil(logList.size() / (limit * 1.0));
+            if (logList.size() > 0) {
+                logListPaged = logList.subList(startingData, Math.min((startingData + limit), logList.size()));
+            }
+
+            for (DeviceMonitoringLog deviceMonitoringLog : logListPaged) {
+                try {
+                    deviceMonitoringLog.setLog_screenshot_path(getFileDirectPath(deviceMonitoringLog.getLog_screenshot_path()).getData().get("file_base64").toString());
+                } catch (Exception e) {
+                    deviceMonitoringLog.setLog_screenshot_path("");
+                }
+            }
+            result.put("logData", logListPaged);
+            result.put("maxPage", maxPage);
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Device log listed");
+        } catch (Exception e) {
+            response.setData(new ArrayList<>());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
 
     //TOKEN AUTH
     public Map<String, Object> tokenAuthentication(String token) {
@@ -2800,7 +3165,7 @@ public class CmsServices {
             } else if (folder.compareToIgnoreCase("resource") == 0) {
                 path = attachmentPathResource;
             } else {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("unknown folder");
                 return response;
@@ -2834,6 +3199,9 @@ public class CmsServices {
             } else if (acceptedVideo.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
                 logger.info("creating thumbnail for  " + fileExtension + " video");
                 thumbnailName = "thumbnail_video.png";
+            } else if (fileExtension.compareToIgnoreCase("pptx") == 0 || fileExtension.compareToIgnoreCase("ppt") == 0) {
+                logger.info("creating thumbnail for  " + fileExtension + " power point");
+                thumbnailName = "thumbnail_ppt.png";
             } else {
                 logger.info("its not an image or video, used web thumbnail");
                 thumbnailName = "thumbnail_url.png";
@@ -2843,11 +3211,11 @@ public class CmsServices {
             imageAddResult.put("thumbnail", thumbnailName);
 
             response.setData(imageAddResult);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
             logger.info(new Date().getTime() + e.getMessage());
@@ -2883,7 +3251,7 @@ public class CmsServices {
             } else if (folder.compareToIgnoreCase("resource") == 0) {
                 path = attachmentPathResource;
             } else {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("unknown folder");
                 logger.info("unknown folder");
@@ -2899,11 +3267,53 @@ public class CmsServices {
             result.put("file_base64", base64);
 
             response.setData(result);
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Get File success");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            logger.info(new Date().getTime() + e.getMessage());
+        } finally {
+            if (session.isConnected() || session != null) {
+                session.disconnect();
+            }
+            if (channel.isConnected() || channel != null) {
+                channel.disconnect();
+            }
+        }
+        return response;
+    }
+
+    public BaseResponse<Map<String, Object>> getFileDirectPath(String path) {
+        BaseResponse response = new BaseResponse();
+        Session session = null;
+        ChannelSftp channel = null;
+        Map<String, Object> result = new HashMap<>();
+        try {
+            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+            session.setPassword(sftpPassword);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect();
+
+
+            InputStream inputStream = channel.get(path);
+            logger.info("file path : " + path);
+            byte[] bytes = IOUtils.toByteArray(inputStream);
+            String base64 = Base64.getEncoder().encodeToString(bytes);
+
+            result.put("file_byte", "-");
+            result.put("file_base64", base64);
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Get File success");
+        } catch (Exception e) {
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
             logger.info(new Date().getTime() + e.getMessage());
@@ -2941,7 +3351,7 @@ public class CmsServices {
             } else if (folder.compareToIgnoreCase("resource") == 0) {
                 path = attachmentPathResource;
             } else {
-//                response.setStatus("0");
+//                response.setStatus("500");
 //                response.setSuccess(false);
 //                response.setMessage("unknown folder");
                 return null;
@@ -2954,11 +3364,11 @@ public class CmsServices {
             logger.info("file path : " + path + file_name);
 
 //            response.setData(result);
-//            response.setStatus("2000");
+//            response.setStatus("200");
 //            response.setSuccess(true);
 //            response.setMessage("Get File success");
         } catch (Exception e) {
-//            response.setStatus("0");
+//            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
             logger.info(new Date().getTime() + e.getMessage());
@@ -2994,7 +3404,7 @@ public class CmsServices {
             } else if (folder.compareToIgnoreCase("resource") == 0) {
                 path = attachmentPathResource;
             } else {
-                response.setStatus("0");
+                response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("unknown folder");
                 return response;
@@ -3004,11 +3414,11 @@ public class CmsServices {
             channel.put(stream, path + uuid + "_" + obj.getOriginalFilename(), 0);
 
             response.setData(uuid + "_" + obj.getOriginalFilename());
-            response.setStatus("2000");
+            response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
-            response.setStatus("0");
+            response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
             logger.info(new Date().getTime() + e.getMessage());

@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -86,6 +87,18 @@ public class RoleController {
             baseResponse.setMessage(e.getMessage());
         }
         return baseResponse;
+    }
+
+    @PostMapping("/getAllPrivilege")
+    public BaseResponse<List<Map<String, Object>>> getAllPrivilege(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info("Get Privilege");
+        return cmsServices.getAllPrivilege(input);
+    }
+
+    @PostMapping("/updatePrivilege")
+    public BaseResponse updatePrivilege(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info("Update Privilege");
+        return cmsServices.updatePrivilege(input);
     }
 
 }

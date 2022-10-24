@@ -24,6 +24,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
             "CAST(\"sort\" AS VARCHAR) like :sort AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
+            "CAST(is_default AS VARCHAR) like :is_default AND " +
             "lower(created_by) like lower(:created_by) AND " +
             "CAST(created_date AS VARCHAR) like :created_date AND " +
             "lower(updated_by) like lower(:updated_by) AND " +
@@ -32,18 +33,18 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
                                    @Param("region_id") String region_id, @Param("company_id") String company_id,
                                    @Param("position_id") String position_id,
                                    @Param("start_date") String start_date, @Param("end_date") String end_date,
-                                   @Param("sort") String sort, @Param("status") String status,
+                                   @Param("sort") String sort, @Param("status") String status, @Param("is_default") String is_default,
                                    @Param("created_by") String created_by, @Param("created_date") String created_date,
                                    @Param("updated_by") String updated_by, @Param("updated_date") String updated_at);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
-void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
-                        @Param("region_id") int region_id, @Param("company_id") int company_id,
-                        @Param("position_id") int position_id,
-                        @Param("start_date") String start_date, @Param("end_date") String end_date,
-                        @Param("sort") int sort, @Param("created_by") String created_by);
+    @Query(value = "INSERT INTO cms.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",is_default,created_by,created_date,updated_by,updated_date) " +
+            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:is_default,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
+    void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
+              @Param("region_id") int region_id, @Param("company_id") int company_id,
+              @Param("position_id") int position_id,
+              @Param("start_date") String start_date, @Param("end_date") String end_date,
+              @Param("sort") int sort, @Param("is_default") boolean is_default, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * FROM cms.Playlist WHERE playlist_id =:playlist_id", nativeQuery = true)
     List<Playlist> getPlaylistById(@Param("playlist_id") int playlist_id);
@@ -67,13 +68,13 @@ void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int 
 
     @Modifying
     @Query(value = "UPDATE cms.Playlist SET playlist_name=:playlist_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,position_id=:position_id," +
-            "start_date = CAST(:start_date AS timestamp),end_date=CAST(:end_date AS timestamp),status=:status," +
+            "start_date = CAST(:start_date AS timestamp),end_date=CAST(:end_date AS timestamp),status=:status,is_default=:is_default," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE playlist_id =:playlist_id ", nativeQuery = true)
     void updatePlaylist(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
                         @Param("region_id") int region_id, @Param("company_id") int company_id,
                         @Param("position_id") int position_id,
                         @Param("start_date") String start_date, @Param("end_date") String end_date,
-                        @Param("status") String status,
+                        @Param("status") String status, @Param("is_default") boolean is_default,
                         @Param("updated_by") String updated_by, @Param("playlist_id") int playlist_id);
 
     @Modifying
@@ -88,11 +89,12 @@ void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int 
     List<Playlist> getSortOrder(@Param("position_id") int position_id, @Param("branch_id") int branch_id);
 
 
-
     @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name)", nativeQuery = true)
     List<Playlist> getPlaylistByNameInsertedValues(@Param("playlist_name") String playlist_name);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
     List<Playlist> getExpiredPlaylist();
+
+
 
 }

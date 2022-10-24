@@ -54,5 +54,10 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
             "updated_date=current_timestamp WHERE role_id=:role_id", nativeQuery = true)
     void deleteRole(@Param("role_id") int role_id, @Param("updated_by") String updated_by);
 
+    @Query(value = "SELECT * FROM cms.Role WHERE status <> 'deleted' " +
+            "ORDER BY created_date DESC", nativeQuery = true)
+    List<Role> getRole();
+
+
 
 }

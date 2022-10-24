@@ -48,7 +48,7 @@ public class UsersController {
     }
 
     @PostMapping("/getUsers")
-    public BaseResponse<List<Users>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
+    public BaseResponse<List<Map<String, Object>>> getUserWithParams(@RequestBody String input) throws Exception, SQLException, ParseException {
         logger.info(new Date().getTime() + " : getUsers - " + input);
         return cmsServices.getUsers(input);
     }

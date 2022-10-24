@@ -1,6 +1,5 @@
 package com.project.CmsApplication.model;
 
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -9,32 +8,26 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "Device", schema = "cms")
-public class Device {
+@Table(name = "privilege", schema = "cms")
+public class Privilege {
     @Id
-    @Column(name = "device_id", columnDefinition = "serial")
+    @Column(name = "privilege_id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int device_id;
+    private int privilege_id;
+
+    @NotNull
+    @Column(name = "role_id")
+    private int role_id;
+
+    @NotNull
+    @Column(name = "menu_name")
+    private String menu_name;
 
     @NotNull
     @Column(name = "status")
     private String status;
 
 
-    @NotNull
-    @Column(name = "device_name")
-    private String device_name;
-
-
-    @NotNull
-    @Column(name = "license_key")
-    private String license_key;
-
-    @NotNull
-    @Column(name = "device_unique_id")
-    private String device_unique_id;
-
-    @NotNull
     @Column(name = "created_by")
     private String created_by;
 
@@ -54,12 +47,28 @@ public class Device {
     @Column(name = "updated_date")
     private Date updated_date;
 
-    public int getDevice_id() {
-        return device_id;
+    public int getPrivilege_id() {
+        return privilege_id;
     }
 
-    public void setDevice_id(int device_id) {
-        this.device_id = device_id;
+    public void setPrivilege_id(int privilege_id) {
+        this.privilege_id = privilege_id;
+    }
+
+    public int getRole_id() {
+        return role_id;
+    }
+
+    public void setRole_id(int role_id) {
+        this.role_id = role_id;
+    }
+
+    public String getMenu_name() {
+        return menu_name;
+    }
+
+    public void setMenu_name(String menu_name) {
+        this.menu_name = menu_name;
     }
 
     public String getStatus() {
@@ -68,15 +77,6 @@ public class Device {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-
-    public String getDevice_name() {
-        return device_name;
-    }
-
-    public void setDevice_name(String device_name) {
-        this.device_name = device_name;
     }
 
     public String getCreated_by() {
@@ -109,21 +109,5 @@ public class Device {
 
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
-    }
-
-    public String getLicense_key() {
-        return license_key;
-    }
-
-    public void setLicense_key(String license_key) {
-        this.license_key = license_key;
-    }
-
-    public String getDevice_unique_id() {
-        return device_unique_id;
-    }
-
-    public void setDevice_unique_id(String device_unique_id) {
-        this.device_unique_id = device_unique_id;
     }
 }

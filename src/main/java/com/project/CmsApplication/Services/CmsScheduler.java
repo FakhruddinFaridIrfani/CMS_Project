@@ -42,7 +42,7 @@ public class CmsScheduler {
         List<Playlist> expiredPlaylist = playlistRepository.getExpiredPlaylist();
         for (Playlist playlist : expiredPlaylist) {
             playlistRepository.updatePlaylist(playlist.getPlaylist_name(), playlist.getBranch_id(), playlist.getRegion_id(), playlist.getCompany_id(),
-                    playlist.getPosition_id(), playlist.getStart_date().toString(), playlist.getEnd_date().toString(), "inactive", "SYSTEM-AUTO",
+                    playlist.getPosition_id(), playlist.getStart_date().toString(), playlist.getEnd_date().toString(), "inactive", playlist.isIs_default(), "SYSTEM-AUTO",
                     playlist.getPlaylist_id());
             logger.info("Playlist : " + playlist.getPlaylist_name() + " has ended");
         }

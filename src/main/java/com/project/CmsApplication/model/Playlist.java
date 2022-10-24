@@ -39,6 +39,10 @@ public class Playlist {
     private int position_id;
 
     @NotNull
+    @Column(name = "is_default")
+    private boolean is_default;
+
+    @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
     @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
     @Column(name = "start_date")
@@ -188,6 +192,14 @@ public class Playlist {
         this.company_id = company_id;
     }
 
+    public boolean isIs_default() {
+        return is_default;
+    }
+
+    public void setIs_default(boolean is_default) {
+        this.is_default = is_default;
+    }
+
     @Override
     public String toString() {
         return "Playlist{" +
@@ -198,6 +210,7 @@ public class Playlist {
                 ", region_id=" + region_id +
                 ", company_id=" + company_id +
                 ", position_id=" + position_id +
+                ", is_default=" + is_default +
                 ", start_date=" + start_date +
                 ", end_date=" + end_date +
                 ", sort=" + sort +

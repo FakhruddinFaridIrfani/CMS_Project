@@ -21,6 +21,10 @@ public class Users {
     public String user_name;
 
     @NotNull
+    @Column(name = "role_id")
+    public int role_id;
+
+    @NotNull
     @Column(name = "user_password")
     public String user_password;
 
@@ -183,11 +187,20 @@ public class Users {
         this.region_id = region_id;
     }
 
+    public int getRole_id() {
+        return role_id;
+    }
+
+    public void setRole_id(int role_id) {
+        this.role_id = role_id;
+    }
+
     @Override
     public String toString() {
         return "Users{" +
                 "user_id=" + user_id +
                 ", user_name='" + user_name + '\'' +
+                ", role_id=" + role_id +
                 ", user_password='" + user_password + '\'' +
                 ", user_email='" + user_email + '\'' +
                 ", status='" + status + '\'' +

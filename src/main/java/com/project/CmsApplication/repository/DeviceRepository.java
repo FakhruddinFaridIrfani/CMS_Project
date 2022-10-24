@@ -37,6 +37,12 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
     @Query(value = "SELECT * FROM cms.Device WHERE device_id =:device_id", nativeQuery = true)
     List<Device> getDeviceById(@Param("device_id") int device_id);
 
+//    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key", nativeQuery = true)
+//    List<Device> getDeviceByLicenseKey(@Param("license_key") String license_key);
+
+    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key AND device_unique_id = ''", nativeQuery = true)
+    List<Device> checkLicenseKeyUsed(@Param("license_key") String license_key);
+
     @Query(value = "SELECT * FROM cms.Device WHERE lower(device_name) = lower(:device_name) AND status not in ('deleted')", nativeQuery = true)
     List<Device> getDeviceByName(@Param("device_name") String device_name);
 
@@ -54,5 +60,23 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
             "updated_date=current_timestamp WHERE device_id=:device_id", nativeQuery = true)
     void deleteDevice(@Param("device_id") int device_id, @Param("updated_by") String updated_by);
 
+    @Query(value = "SELECT * FROM cms.device WHERE device_id in (" +
+            "SELECT distinct(device_id) FROM cms.position " +
+            "WHERE position_id in " +
+            "    (SELECT distinct(position_id) FROM cms.playlist WHERE CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND status <> 'deleted') AND status <> 'deleted') " +
+            "AND status <> 'deleted' ORDER BY device_name ASC", nativeQuery = true)
+    List<Device> getDeviceListFromPlaylist(@Param("branch_id") String branch_id,
+                                           @Param("region_id") String region_id, @Param("company_id") String company_id);
 
+
+    @Query(value = "SELECT * FROM cms.device where status <> 'deleted' AND device_unique_id =:device_unique_id", nativeQuery = true)
+    List<Device> checkDeviceUniqueId(@Param("device_unique_id") String device_unique_id);
+
+    @Modifying
+    @Query(value = "UPDATE cms.device SET license_key =:license_key,updated_by=:updated_by,updated_date=current_timestamp WHERE device_id =:device_id", nativeQuery = true)
+    void updateLicenseKey(@Param("device_id") int device_id, @Param("license_key") String license_key, @Param("updated_by") String updated_by);
+
+    @Modifying
+    @Query(value = "UPDATE cms.device SET device_unique_id =:device_unique_id,updated_by='SYSTEM',updated_date=current_timestamp WHERE device_id =:device_id", nativeQuery = true)
+    void updateLicenseKeyDeviceUniqueIdPair(@Param("device_id") int device_id, @Param("device_unique_id") String device_unique_id);
 }
