@@ -26,6 +26,8 @@ import java.io.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -33,6 +35,8 @@ import java.util.Map;
 public class UtilityController {
 
     Logger logger = LoggerFactory.getLogger(UtilityController.class);
+
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Autowired
     CmsServices cmsServices;
@@ -52,7 +56,7 @@ public class UtilityController {
     }
 
     @PostMapping("/addFile")
-    public BaseResponse<Map<String,String>> addFile(@RequestBody String input) throws Exception {
+    public BaseResponse<Map<String, String>> addFile(@RequestBody String input) throws Exception {
         logger.info(new Date().getTime() + " : Add File test");
         BaseResponse baseResponse = new BaseResponse<>();
         JSONObject jsonObject = new JSONObject(input);
@@ -128,7 +132,7 @@ public class UtilityController {
             result.setStatus("2000");
             result.setSuccess(true);
             result.setMessage("Config added");
-        }else{
+        } else {
             result.setStatus("0");
             result.setSuccess(false);
             result.setMessage("Some field is empty");
@@ -153,11 +157,63 @@ public class UtilityController {
             result.setStatus("2000");
             result.setSuccess(true);
             result.setMessage("Config " + jsonInput.optString("configuration_name") + " updated");
-        }else{
+        } else {
             result.setStatus("0");
             result.setSuccess(false);
             result.setMessage("Some field is empty");
         }
+        return result;
+    }
+
+    @PostMapping("/testParsePPT")
+    public BaseResponse testParsePPT(@RequestBody String input) {
+        logger.info(new Date().getTime() + " : Parse PPT");
+        BaseResponse result = new BaseResponse<>();
+//            executor.submit(() -> {
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            List<String> res = cmsServices.ParseToImage(jsonInput.getString("file_name"));
+            result.setData(res);
+            result.setStatus("200");
+            result.setSuccess(true);
+            result.setMessage("PPT file successfully parse to image : " + res.size());
+        } catch (IOException e) {
+            result.setStatus("500");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        } catch (Exception e) {
+            result.setStatus("500");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        }
+//            });
+
+        return result;
+    }
+
+    @PostMapping("/testGetImageParsed")
+    public BaseResponse testGetImageParsed(@RequestBody String input) {
+        logger.info(new Date().getTime() + " : get PPT image");
+        BaseResponse result = new BaseResponse<>();
+//            executor.submit(() -> {
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            List<String> res = cmsServices.getPresentationImage(jsonInput.getString("file_name").split("\\.")[0]);
+            result.setData(res);
+            result.setStatus("200");
+            result.setSuccess(true);
+            result.setMessage("PPT Image parsed list : " + res.size());
+        } catch (IOException e) {
+            result.setStatus("500");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        } catch (Exception e) {
+            result.setStatus("500");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        }
+//            });
+
         return result;
     }
 

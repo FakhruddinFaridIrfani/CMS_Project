@@ -42,6 +42,13 @@ public interface RunningTextRepository extends JpaRepository<RunningText, Intege
             @Param("updated_by") String updated_by,
             @Param("updated_date") String updated_at);
 
+    @Query(value = "SELECT * FROM cms.running_text WHERE " +
+            "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
+            "status not in('deleted') ORDER BY created_date DESC LIMIT 1", nativeQuery = true)
+    RunningText getRunningTextAndroid(@Param("branch_id") String branch_id,
+                                      @Param("region_id") String region_id,
+                                      @Param("company_id") String company_id);
+
     @Modifying
     @Query(value = "INSERT INTO cms.running_text(status,branch_id,region_id,company_id,tittle,description,running_text,start_date,end_date,created_by,created_date,updated_by,updated_date) " +
             "VALUES('active',:branch_id,:region_id,:company_id,:tittle,:description,:running_text,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
@@ -69,10 +76,10 @@ public interface RunningTextRepository extends JpaRepository<RunningText, Intege
             "start_date=CAST(:start_date AS timestamp),end_date =CAST(:end_date AS timestamp) ,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE running_text_id =:running_text_id ", nativeQuery = true)
     void updateRunningText(@Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id,
-                     @Param("tittle") String tittle, @Param("description") String description,
-                     @Param("running_text") String running_text,
-                     @Param("start_date") String start_date, @Param("end_date") String end_date, @Param("status") String status,
-                     @Param("updated_by") String updated_by, @Param("running_text_id") int running_text_id);
+                           @Param("tittle") String tittle, @Param("description") String description,
+                           @Param("running_text") String running_text,
+                           @Param("start_date") String start_date, @Param("end_date") String end_date, @Param("status") String status,
+                           @Param("updated_by") String updated_by, @Param("running_text_id") int running_text_id);
 
     @Modifying
     @Query(value = "UPDATE cms.running_text SET status = 'deleted',updated_by=:updated_by," +

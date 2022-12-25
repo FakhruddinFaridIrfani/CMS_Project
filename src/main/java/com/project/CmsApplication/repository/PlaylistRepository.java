@@ -52,8 +52,6 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
     @Query(value = "SELECT * FROM cms.Playlist WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
     List<Playlist> getPlaylistByBranchId(@Param("branch_id") int branch_id);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE position_id =:position_id AND status not in ('deleted')", nativeQuery = true)
-    List<Playlist> getPlaylistByPositionId(@Param("position_id") int position_id);
 
 //    @Query(value = "SELECT * FROM cms.Playlist WHERE resource_id =:resource_id AND status not in ('deleted')", nativeQuery = true)
 //    List<Playlist> getPlaylistByResourceId(@Param("resource_id") int resource_id);
@@ -95,6 +93,8 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
     @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
     List<Playlist> getExpiredPlaylist();
 
+    @Query(value = "SELECT * FROM cms.playlist where position_id = :position_id AND status <> 'deleted'", nativeQuery = true)
+    List<Playlist> getPlaylistByPositionId(@Param("position_id") int position_id);
 
 
 }

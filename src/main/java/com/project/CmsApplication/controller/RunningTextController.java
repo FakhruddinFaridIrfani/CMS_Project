@@ -30,6 +30,11 @@ public class RunningTextController {
         logger.info(new Date().getTime() + " : getRunningText - " + input);
         return cmsServices.getRunningTextList(input);
     }
+    @PostMapping("/getRunningTextAndroid")
+    public BaseResponse getRunningTextAndroid(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getRunningTextAndroid - " + input);
+        return cmsServices.getRunningTextAndroid(input);
+    }
 
     @PostMapping("/addNewRunningText")
     public BaseResponse<String> addNewRunningText(@RequestBody String input) throws Exception, SQLException, ParseException {

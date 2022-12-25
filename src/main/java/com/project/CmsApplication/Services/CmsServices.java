@@ -1,18 +1,14 @@
 package com.project.CmsApplication.Services;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
+import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
-import com.project.CmsApplication.controller.BranchController;
-import com.project.CmsApplication.controller.RunningTextController;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.apache.commons.io.FileUtils;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,28 +16,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Base64;
+
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
@@ -99,8 +88,15 @@ public class CmsServices {
     PrivilegeRepository privilegeRepository;
 
     @Autowired
-    @Qualifier("entityManagerFactory")
-    private EntityManager entityManager;
+    LicenseRepository licenseRepository;
+
+    @Autowired
+    CmsEncryptDecrypt cmsEncryptDecrypt;
+
+
+//    @Autowired
+//    @Qualifier("entityManagerFactory")
+//    private EntityManager entityManager;
 
     Logger logger = LoggerFactory.getLogger(CmsServices.class);
 
@@ -1774,7 +1770,9 @@ public class CmsServices {
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Device> getDeviceResult = deviceRepository.getDeviceList(device_name, status, created_by, created_date, updated_by, updated_date);
-
+            for (Device device : getDeviceResult) {
+                device.setLicense_key(cmsEncryptDecrypt.decrypt(device.getLicense_key()));
+            }
 
             response.setData(getDeviceResult);
             response.setStatus("200");
@@ -1872,44 +1870,6 @@ public class CmsServices {
         return response;
     }
 
-    public BaseResponse generateLicenseKey(String input) throws Exception {
-        BaseResponse response = new BaseResponse();
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-
-            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
-                return response;
-            }
-            String userOnProcess = auth.get("user_name").toString();
-            int device_id = jsonInput.getInt("device_id");
-
-            String licenseKey = Long.toHexString(new Date().getTime());
-
-            List<Device> checkIsLicenseAlreadyGenerated = deviceRepository.getDeviceById(device_id);
-            if (!checkIsLicenseAlreadyGenerated.get(0).getLicense_key().isEmpty()) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("Failed to generate license key, this device already has license key");
-                return response;
-            }
-
-            deviceRepository.updateLicenseKey(device_id, licenseKey, userOnProcess);
-            response.setData(licenseKey);
-            response.setStatus("200");
-            response.setSuccess(true);
-            response.setMessage("License key generated");
-        } catch (Exception e) {
-            response.setStatus("500");
-            response.setSuccess(false);
-            response.setMessage("Failed to generate license key :" + e.getMessage());
-        }
-
-        return response;
-    }
 
     public BaseResponse checkDeviceUniqueId(String input) throws Exception {
         BaseResponse response = new BaseResponse();
@@ -1940,8 +1900,16 @@ public class CmsServices {
         BaseResponse response = new BaseResponse();
         try {
             JSONObject jsonInput = new JSONObject(input);
-            String license_key = jsonInput.getString("license_key");
+            String license_key = cmsEncryptDecrypt.encrypt(jsonInput.getString("license_key").getBytes());
             String device_unique_id = jsonInput.getString("device_unique_id");
+
+            List<Device> checkValidCountLicense = deviceRepository.checkLicenseKeyCount(license_key);
+            if (checkValidCountLicense.size() > 1) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Cannot use the license, multiple device found with this license");
+                return response;
+            }
 
             List<Device> checkedLicenseKey = deviceRepository.checkLicenseKeyUsed(license_key);
             if (checkedLicenseKey.size() > 0) {
@@ -2184,13 +2152,37 @@ public class CmsServices {
                 response.setMessage("Resource name already exist / used");
                 return response;
             }
+
+            if (jsonInput.optString("type").compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || jsonInput.optString("type").compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
+                String fileExtension = jsonInput.optString("file_name").split("\\.")[1];
+                if (fileExtension.compareToIgnoreCase("pptx") != 0) {
+                    response.setStatus("500");
+                    response.setSuccess(false);
+                    response.setMessage("Power point files only accept pptx format");
+                    return response;
+                }
+            }
+
             String file = "";
             String thumbnail = "";
             if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
                 Map<String, String> fileAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
+                ParseToImage(jsonInput.optString("file_name"));
                 file = fileAddResult.get("file");
                 thumbnail = fileAddResult.get("thumbnail");
             }
+
+//            //PPT HANDLER FOR ANDROID
+//            if (jsonInput.optString("type").compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || jsonInput.optString("type").compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
+//                String fileExtension = jsonInput.optString("file_name").split("\\.")[1];
+//                String finalFileName = jsonInput.optString("file_name");
+//                if (fileExtension.compareToIgnoreCase("pptx") != 0) {
+//                    finalFileName.replace(fileExtension, "pptx");
+//                    duplicateFile(finalFileName, jsonInput.optString("file"));
+//                }
+//
+//            }
+
             if (!jsonInput.optString("url_resource").isEmpty()) {
                 thumbnail = "thumbnail_url.png";
             }
@@ -2282,6 +2274,70 @@ public class CmsServices {
             result.put("maxPage", maxPage);
 
             response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Resource Listed");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse getResourceListAll(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String resource_name;
+        String type;
+        String thumbnail;
+        String file;
+        String duration;
+        String stretch;
+        String status;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            resource_name = "%" + jsonInput.optString("resource_name") + "%";
+            type = "%" + jsonInput.optString("type") + "%";
+            thumbnail = "%" + jsonInput.optString("thumbnail") + "%";
+            file = "%" + jsonInput.optString("file") + "%";
+            duration = jsonInput.optInt("duration") + "";
+            if (duration.isEmpty() || duration.compareToIgnoreCase("null") == 0 || duration.compareToIgnoreCase("0") == 0) {
+                duration = "%%";
+            }
+            stretch = "%" + jsonInput.optString("stretch") + "%";
+            status = jsonInput.optString("status");
+            if (status.isEmpty()) {
+                status = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
+                    stretch, status, created_by, created_date, updated_by, updated_date);
+
+            for (Resource resource : getResourceResult) {
+                resource.setThumbnail("");
+            }
+
+            response.setData(getResourceResult);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource Listed");
@@ -2664,6 +2720,111 @@ public class CmsServices {
         return getPlaylistResource;
     }
 
+    public BaseResponse getPlaylistByDeviceId(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        List results = new ArrayList();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            int device_id = jsonInput.getInt("device_id");
+            List<Position> getPositionByDeviceId = positionRepository.getPositionByDeviceIdBasedOnPlaylist(device_id);
+            for (int i = 0; i < getPositionByDeviceId.size(); i++) {
+                Map resultData = new HashMap();
+                Position position = getPositionByDeviceId.get(i);
+                List<Playlist> playlistList = playlistRepository.getPlaylistByPositionId(position.getPosition_id());
+                resultData.put("position_id", position.getPosition_id());
+                resultData.put("box", position.getBox());
+                resultData.put("x_position", position.getX_pos());
+                resultData.put("y_position", position.getY_pos());
+                resultData.put("height", position.getHeight());
+                resultData.put("weight", position.getWidth());
+                resultData.put("uom", position.getMeasurement());
+                List playlistResult = new ArrayList();
+                for (int j = 0; j < playlistList.size(); j++) {
+                    Map resultPlayListMap = new HashMap();
+                    Playlist playlist = playlistList.get(j);
+                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylist_id(playlist.getPlaylist_id());
+                    resultPlayListMap.put("playlist_id", playlist.getPlaylist_id());
+                    resultPlayListMap.put("playlist_name", playlist.getPlaylist_name());
+                    resultPlayListMap.put("start_date", playlist.getStart_date());
+                    resultPlayListMap.put("end_date", playlist.getEnd_date());
+                    resultPlayListMap.put("is_default", playlist.isIs_default());
+                    List resourcesResult = new ArrayList();
+                    for (int k = 0; k < getPlaylistResource.size(); k++) {
+                        Map resultResourceMap = new HashMap();
+                        PlaylistResource playlistResource = getPlaylistResource.get(k);
+                        List<Resource> resourceList = resourceRepository.getResourceById(playlistResource.getResource_id());
+                        Resource resource = resourceList.get(0);
+                        resultResourceMap.put("order", playlistResource.getOrder());
+                        resultResourceMap.put("resource_id", resource.getResource_id());
+                        resultResourceMap.put("resource_name", resource.getResource_name());
+                        resultResourceMap.put("resource_type", resource.getType());
+                        resultResourceMap.put("resource_duration", resource.getDuration());
+                        resultResourceMap.put("resource_stretch", resource.getStretch());
+                        resultResourceMap.put("resource_url", resource.getUrl_resource());
+                        List<String> urlDownload = new ArrayList<>();
+                        if (!resource.getType().isEmpty()) {
+                            String type = resource.getType();
+//                            logger.info("resource type : " + type);
+                            String fileExtension = resource.getFile().split("\\.")[1];
+//                            logger.info("file extension : " + fileExtension);
+                            String fileName = resource.getFile();
+                            if (type.compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || type.compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
+//                                logger.info("its power point");
+                                List<String> pptImageList = getPresentationImage(fileName.split("\\.")[0]);
+//                                logger.info("image generated : " + pptImageList.size());
+                                if (pptImageList.size() == 0 && fileExtension.compareToIgnoreCase("pptx") == 0) {
+//                                    logger.info("no image yet,lets generate");
+                                    pptImageList = ParseToImage(fileName);
+//                                    logger.info("image generated : " + pptImageList.size());
+                                }
+//                                logger.info("image already generated, count :" + pptImageList.size());
+                                urlDownload.addAll(pptImageList);
+
+                            } else {
+                                urlDownload.add("/resource/downloadResource/" + resource.getFile());
+                            }
+                        }
+
+                        resultResourceMap.put("url_download", urlDownload);
+                        resourcesResult.add(resultResourceMap);
+                    }
+                    resultPlayListMap.put("resources", resourcesResult);
+
+                    playlistResult.add(resultPlayListMap);
+                }
+
+
+                resultData.put("playlist", playlistResult);
+                results.add(resultData);
+            }
+            if (results.size() > 0) {
+                response.setData(results);
+                response.setStatus("200");
+                response.setSuccess(true);
+                response.setMessage("Playlist Listed");
+            } else {
+                response.setStatus("404");
+                response.setSuccess(false);
+                response.setMessage("No playlist found for this device");
+            }
+
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
     //    public List<Playlist> getPlaylistByName(String playlist_name) {
 //        List<Playlist> getPlaylistResource = new ArrayList<>();
 //        getPlaylistResource = playlistRepository.getPlaylistByName(playlist_name);
@@ -2941,6 +3102,52 @@ public class CmsServices {
         return response;
     }
 
+    public BaseResponse getRunningTextAndroid(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String branch_id;
+        String region_id;
+        String company_id;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+
+
+            RunningText getRunningTextResult = runningTextRepository.getRunningTextAndroid(branch_id, region_id, company_id);
+
+
+            response.setData(getRunningTextResult);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("RunningText Listed");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
     public BaseResponse<RunningText> updateRunningText(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
 
@@ -3120,6 +3327,116 @@ public class CmsServices {
         return response;
     }
 
+
+    //LICENSE KEY SECTION
+    public BaseResponse<String> addNewLicenseKey(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        int count = 0;
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+//            String userOnProcess = auth.get("user_name").toString();
+//            Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
+
+            String fileBase64 = jsonInput.getString("file");
+            String line = "";
+            List<LicenseKey> licenseKeyList = licenseRepository.findAll();
+            List license = new ArrayList();
+            for (LicenseKey licenseKey : licenseKeyList) {
+                license.add(licenseKey.getLicense_key());
+            }
+            byte[] b = Base64.getMimeDecoder().decode(fileBase64);
+            InputStream inputStream = new ByteArrayInputStream(b);
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            while ((line = br.readLine()) != null) {
+                if (!license.contains(line)) {
+                    count++;
+                    LicenseKey licenseKeys = new LicenseKey();
+                    licenseKeys.setLicense_key(line);
+                    licenseRepository.save(licenseKeys);
+                }
+            }
+            response.setStatus("200");
+            response.setSuccess(true);
+            if (count > 0) {
+                response.setMessage(count + " - License Key successfully added");
+            } else {
+                response.setMessage("No new license key added, all license already registered");
+            }
+
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse generateLicenseKey(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            int device_id = jsonInput.getInt("device_id");
+
+
+            List<Device> checkIsLicenseAlreadyGenerated = deviceRepository.getDeviceById(device_id);
+            if (!checkIsLicenseAlreadyGenerated.get(0).getLicense_key().isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Failed to generate license key, this device already has license key");
+                return response;
+            }
+
+            List<String> availableLicense = licenseRepository.getAvailableLicense();
+            if (availableLicense.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("No more license available, please contact application administrator");
+                return response;
+            }
+
+            String licenseKey = availableLicense.get(0);
+            String licenseOriginalTest = cmsEncryptDecrypt.decrypt(licenseKey);
+            if (licenseOriginalTest == null) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("available license (" + licenseKey + ") not valid");
+                return response;
+            }
+
+            deviceRepository.updateLicenseKey(device_id, licenseKey, userOnProcess);
+            response.setData(licenseKey);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("License key generated");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage("Failed to generate license key :" + e.getMessage());
+        }
+
+        return response;
+    }
+
+
     //TOKEN AUTH
     public Map<String, Object> tokenAuthentication(String token) {
         Map<String, Object> result = new HashMap();
@@ -3199,7 +3516,7 @@ public class CmsServices {
             } else if (acceptedVideo.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
                 logger.info("creating thumbnail for  " + fileExtension + " video");
                 thumbnailName = "thumbnail_video.png";
-            } else if (fileExtension.compareToIgnoreCase("pptx") == 0 || fileExtension.compareToIgnoreCase("ppt") == 0) {
+            } else if (fileExtension.compareToIgnoreCase("pptx") == 0 || fileExtension.compareToIgnoreCase("ppt") == 0 || fileExtension.compareToIgnoreCase("pps") == 0 || fileExtension.compareToIgnoreCase("ppsx") == 0) {
                 logger.info("creating thumbnail for  " + fileExtension + " power point");
                 thumbnailName = "thumbnail_ppt.png";
             } else {
@@ -3229,6 +3546,34 @@ public class CmsServices {
         }
         return response;
     }
+//    public void duplicateFile(String file_name, String file_content) throws Exception {
+//        Session session = null;
+//        ChannelSftp channel = null;
+//        Map<String, String> imageAddResult = new HashMap<>();
+//        try {
+//            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+//            session.setPassword(sftpPassword);
+//            session.setConfig("StrictHostKeyChecking", "no");
+//            session.connect();
+//            channel = (ChannelSftp) session.openChannel("sftp");
+//            channel.connect();
+//
+//            byte[] b = Base64.getMimeDecoder().decode(file_content);
+//            InputStream stream = new ByteArrayInputStream(b);
+//            channel.put(stream, attachmentPathResource +  file_name, 0);
+//
+//
+//        } catch (Exception e) {
+//            logger.info(new Date().getTime() + e.getMessage());
+//        } finally {
+//            if (session.isConnected() || session != null) {
+//                session.disconnect();
+//            }
+//            if (channel.isConnected() || channel != null) {
+//                channel.disconnect();
+//            }
+//        }
+//    }
 
     public BaseResponse<Map<String, Object>> getFile(String file_name, String folder) {
         BaseResponse response = new BaseResponse();
@@ -3284,6 +3629,138 @@ public class CmsServices {
             }
         }
         return response;
+    }
+
+    public List<String> ParseToImage(String file_name) throws Exception {
+        List<String> result = new ArrayList<>();
+        Session session = null;
+        ChannelSftp channel = null;
+        try {
+//            byte[] b = Base64.getMimeDecoder().decode(getFile(file_name, "resource").getData().get("file_base64").toString());
+//            InputStream stream = new ByteArrayInputStream(b);
+            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+            session.setPassword(sftpPassword);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect();
+            InputStream inputStream = channel.get(attachmentPathResource + file_name);
+
+            logger.info("FILE LOADED INTO STREAM");
+
+//            File file = new File("temp.pptx");
+//            FileUtils.copyInputStreamToFile(stream, file);
+            XMLSlideShow ppt = new XMLSlideShow(inputStream);
+            inputStream.close();
+            logger.info("PPT LOADED");
+            String fileNameOnly = file_name.split("\\.")[0];
+            logger.info("FILE NAME : " + fileNameOnly);
+//
+            // get the dimension and size of the slide
+            Dimension pgsize = ppt.getPageSize();
+            List<XSLFSlide> slide = ppt.getSlides();
+            BufferedImage img = null;
+
+            logger.info("slide size : " + slide.size());
+
+            for (int i = 0; i < slide.size(); i++) {
+                img = new BufferedImage(
+                        pgsize.width, pgsize.height,
+                        BufferedImage.TYPE_INT_RGB);
+                Graphics2D graphics = img.createGraphics();
+                logger.info("img create : " + i);
+
+                // clear area
+                graphics.setPaint(Color.white);
+                graphics.fill(new Rectangle2D.Float(
+                        0, 0, pgsize.width, pgsize.height));
+
+                // draw the images
+                slide.get(i).draw(graphics);
+                logger.info("image draw : " + i);
+                // file.getParent().mkdirs();
+
+//                System.out.println(fileNameWithOutExt);
+//                OutputStream outputStream = channel.put(attachmentPathResource + fileNameOnly + "-" + i + ".png", 0);
+
+                String imageFileName = fileNameOnly + "-" + i + ".png";
+                logger.info("image name : " + imageFileName);
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                ImageIO.write(img, "png", os);
+                logger.info("write to OS success : " + i);
+                InputStream fis = new ByteArrayInputStream(os.toByteArray());
+                logger.info("IS created from OS : " + i);
+                channel.put(fis, attachmentPathResource + imageFileName, 0);
+                logger.info("image name generated : " + imageFileName);
+                result.add("/resource/downloadResource/" + imageFileName);
+
+//                FileOutputStream out = new FileOutputStream(
+//                        fileNameWithOutExt + "-" + i + ".png");
+
+//                javax.imageio.ImageIO.write(img, "png", outputStream);
+//                ppt.write(outputStream);
+//                outputStream.close();
+//                System.out.println(i);
+            }
+        } catch (SftpException e) {
+            logger.info("error while parsing ppt :" + e.getMessage());
+            return null;
+        } catch (IOException e) {
+            logger.info("error while parsing ppt :" + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.info("error while parsing ppt :" + e.getMessage());
+            return null;
+        } finally {
+            if (session.isConnected() || session != null) {
+                session.disconnect();
+            }
+            if (channel.isConnected() || channel != null) {
+                channel.disconnect();
+            }
+        }
+
+        return result;
+    }
+
+    public List<String> getPresentationImage(String file_name) throws Exception {
+        List<String> result = new ArrayList<>();
+        Session session = null;
+        ChannelSftp channel = null;
+        try {
+            session = new JSch().getSession(sftpUser, sftpUrl, 22);
+            session.setPassword(sftpPassword);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect();
+            String searchImageName = file_name.concat("-");
+            Vector<ChannelSftp.LsEntry> imageFileGenerated = channel.ls(attachmentPathResource);
+            for (ChannelSftp.LsEntry entry : imageFileGenerated) {
+                if (!entry.getAttrs().isDir()) {
+                    if (entry.getFilename().contains(searchImageName)) {
+                        result.add("/resource/downloadResource/" + entry.getFilename());
+                    }
+                }
+            }
+
+
+        } catch (SftpException e) {
+            logger.info("error while get ppt image parsed :" + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.info("error while parsing ppt :" + e.getMessage());
+            return null;
+        } finally {
+            if (session.isConnected() || session != null) {
+                session.disconnect();
+            }
+            if (channel.isConnected() || channel != null) {
+                channel.disconnect();
+            }
+        }
+
+        return result;
     }
 
     public BaseResponse<Map<String, Object>> getFileDirectPath(String path) {

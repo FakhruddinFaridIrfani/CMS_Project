@@ -40,8 +40,11 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
 //    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key", nativeQuery = true)
 //    List<Device> getDeviceByLicenseKey(@Param("license_key") String license_key);
 
-    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key AND device_unique_id = ''", nativeQuery = true)
+    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key AND device_unique_id = '' and status <> 'deleted'", nativeQuery = true)
     List<Device> checkLicenseKeyUsed(@Param("license_key") String license_key);
+
+    @Query(value = "SELECT * FROM cms.Device WHERE license_key =:license_key and status <> 'deleted'", nativeQuery = true)
+    List<Device> checkLicenseKeyCount(@Param("license_key") String license_key);
 
     @Query(value = "SELECT * FROM cms.Device WHERE lower(device_name) = lower(:device_name) AND status not in ('deleted')", nativeQuery = true)
     List<Device> getDeviceByName(@Param("device_name") String device_name);
@@ -79,4 +82,8 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
     @Modifying
     @Query(value = "UPDATE cms.device SET device_unique_id =:device_unique_id,updated_by='SYSTEM',updated_date=current_timestamp WHERE device_id =:device_id", nativeQuery = true)
     void updateLicenseKeyDeviceUniqueIdPair(@Param("device_id") int device_id, @Param("device_unique_id") String device_unique_id);
+
+
+
+
 }

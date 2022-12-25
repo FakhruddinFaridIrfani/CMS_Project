@@ -80,5 +80,11 @@ public class DeviceController {
         return cmsServices.authLicenseKeyAndDeviceUniqueId(input);
     }
 
+    @PostMapping("/addNewLicenseKey")
+    public BaseResponse addNewLicenseKey(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewLicenseKey - " + input);
+        return cmsServices.addNewLicenseKey(input);
+    }
+
 
 }

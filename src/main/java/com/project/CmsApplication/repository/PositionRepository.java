@@ -73,4 +73,9 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
     void deletePosition(@Param("position_id") int position_id, @Param("updated_by") String updated_by);
 
 
+    @Query(value = "SELECT distinct(po.*) " +
+            "FROM cms.position po " +
+            "INNER JOIN cms.playlist pl ON po.position_id = pl.position_id  " +
+            "WHERE po.device_id = :device_id AND pl.status <> 'deleted'", nativeQuery = true)
+    List<Position> getPositionByDeviceIdBasedOnPlaylist(@Param("device_id") int device_id);
 }
