@@ -2,6 +2,8 @@ package com.project.CmsApplication.model;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
@@ -9,12 +11,12 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "running_text", schema = "cms_2")
-public class RunningText {
+@Table(name = "Profile", schema = "cms_2")
+public class Profile {
     @Id
-    @Column(name = "running_text_id", columnDefinition = "serial")
+    @Column(name = "profile_id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int running_text_id;
+    private int profile_id;
 
     @NotNull
     @Column(name = "company_id")
@@ -28,35 +30,22 @@ public class RunningText {
     @Column(name = "branch_id")
     private int branch_id;
 
-
     @NotNull
-    @Column(name = "tittle")
-    private String tittle;
+    @Column(name = "profile_name")
+    private String profile_name;
 
     @NotNull
     @Column(name = "description")
     private String description;
 
     @NotNull
-    @Column(name = "running_text")
-    private String running_text;
-
-    @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
-    @Column(name = "start_date")
-    private Date start_date;
-
-    @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
-    @Column(name = "end_date")
-    private Date end_date;
-
-
-    @NotNull
     @Column(name = "status")
     private String status;
+
+    @NotNull
+    @Column(name = "status_profile")
+    private String status_profile;
+
 
     @NotNull
     @Column(name = "created_by")
@@ -78,13 +67,12 @@ public class RunningText {
     @Column(name = "updated_date")
     private Date updated_date;
 
-
-    public int getRunning_text_id() {
-        return running_text_id;
+    public int getProfile_id() {
+        return profile_id;
     }
 
-    public void setRunning_text_id(int running_text_id) {
-        this.running_text_id = running_text_id;
+    public void setProfile_id(int profile_id) {
+        this.profile_id = profile_id;
     }
 
     public int getCompany_id() {
@@ -111,12 +99,12 @@ public class RunningText {
         this.branch_id = branch_id;
     }
 
-    public String getTittle() {
-        return tittle;
+    public String getProfile_name() {
+        return profile_name;
     }
 
-    public void setTittle(String tittle) {
-        this.tittle = tittle;
+    public void setProfile_name(String profile_name) {
+        this.profile_name = profile_name;
     }
 
     public String getDescription() {
@@ -127,36 +115,20 @@ public class RunningText {
         this.description = description;
     }
 
-    public String getRunning_text() {
-        return running_text;
-    }
-
-    public void setRunning_text(String running_text) {
-        this.running_text = running_text;
-    }
-
-    public Date getStart_date() {
-        return start_date;
-    }
-
-    public void setStart_date(Date start_date) {
-        this.start_date = start_date;
-    }
-
-    public Date getEnd_date() {
-        return end_date;
-    }
-
-    public void setEnd_date(Date end_date) {
-        this.end_date = end_date;
-    }
-
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getStatus_profile() {
+        return status_profile;
+    }
+
+    public void setStatus_profile(String status_profile) {
+        this.status_profile = status_profile;
     }
 
     public String getCreated_by() {

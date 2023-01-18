@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "users", schema = "cms")
+@Table(name = "users", schema = "cms_2")
 public class Users {
 
     @Id

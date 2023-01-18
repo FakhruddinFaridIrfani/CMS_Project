@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "license", schema = "cms")
+@Table(name = "license", schema = "cms_2")
 public class LicenseKey {
     @Id
     @Column(name = "license_id", columnDefinition = "serial")
@@ -20,6 +20,10 @@ public class LicenseKey {
     @NotNull
     @Column(name = "license_key")
     private String license_key;
+
+    @NotNull
+    @Column(name = "company_id")
+    private int company_id;
 
     public int getLicense_id() {
         return license_id;
@@ -35,6 +39,14 @@ public class LicenseKey {
 
     public void setLicense_key(String license_key) {
         this.license_key = license_key;
+    }
+
+    public int getCompany_id() {
+        return company_id;
+    }
+
+    public void setCompany_id(int company_id) {
+        this.company_id = company_id;
     }
 
     @Override

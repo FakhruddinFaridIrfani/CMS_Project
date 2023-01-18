@@ -15,14 +15,14 @@ import java.util.List;
 @Transactional
 public interface PrivilegeRepository extends JpaRepository<Privilege, Integer> {
 
-    @Query(value = "SELECT * FROM cms.privilege where role_id = :role_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.privilege where role_id = :role_id", nativeQuery = true)
     List<Privilege> getPrivilegeByRoleId(@Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.privilege SET menu_name = :menu_name,updated_by=:updated_by,updated_date = current_timestamp where role_id = :role_id", nativeQuery = true)
+    @Query(value = "UPDATE cms_2.privilege SET menu_name = :menu_name,updated_by=:updated_by,updated_date = current_timestamp where role_id = :role_id", nativeQuery = true)
     void updatePrivilegeMenuName(@Param("menu_name") String menu_name, @Param("updated_by") String updated_by, @Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.privilege (status,role_id,menu_name,created_by,created_date,updated_by,updated_date) VALUES ('active',:role_id,'[]','SYSTEM',current_timestamp,'SYSTEM',current_timestamp)", nativeQuery = true)
+    @Query(value = "INSERT INTO cms_2.privilege (status,role_id,menu_name,created_by,created_date,updated_by,updated_date) VALUES ('active',:role_id,'[]','SYSTEM',current_timestamp,'SYSTEM',current_timestamp)", nativeQuery = true)
     void insertGeneralMenuName(@Param("role_id") int role_id);
 }

@@ -15,7 +15,7 @@ import java.util.List;
 @Transactional
 public interface DeviceMonitoringLogRepository extends JpaRepository<DeviceMonitoringLog, Integer> {
 
-    @Query(value = "SELECT * FROM cms.device_monitoring_log WHERE " +
+    @Query(value = "SELECT * from cms_2.device_monitoring_log WHERE " +
             "device_id=:device_id ORDER BY created_date DESC", nativeQuery = true)
     List<DeviceMonitoringLog> getDeviceMonitoringLogList(@Param("device_id") int device_id);
 

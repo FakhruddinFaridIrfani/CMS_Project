@@ -14,8 +14,8 @@ import java.util.List;
 @Transactional
 public interface PositionRepository extends JpaRepository<Position, Integer> {
 
-    @Query(value = "SELECT * FROM cms.Position WHERE " +
-            "CAST(device_id AS VARCHAR) like :device_id AND " +
+    @Query(value = "SELECT * from cms_2.Position WHERE " +
+            "CAST(profile_id AS VARCHAR) like :profile_id AND " +
             "lower(box) like lower(:box) AND " +
             "x_pos like :x_pos AND " +
             "y_pos like :y_pos AND " +
@@ -29,7 +29,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
             "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
     List<Position> getPositionList(
-            @Param("device_id") String device_id,
+            @Param("profile_id") String profile_id,
             @Param("box") String box,
             @Param("x_pos") String x_pos,
             @Param("y_pos") String y_pos,
@@ -42,40 +42,40 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
             @Param("updated_by") String updated_by,
             @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms.Position(status,device_id,box,x_pos,y_pos,width,height,measurement,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:device_id,:box,:x_pos,:y_pos,:width,:height,:measurement,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("device_id") int device_id, @Param("box") String box,
-              @Param("x_pos") String x_pos, @Param("y_pos") String y_pos,
-              @Param("width") String width, @Param("height") String height,
-              @Param("measurement") String measurement, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Position(status,profile_id,box,x_pos,y_pos,width,height,measurement,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES('active',:profile_id,:box,:x_pos,:y_pos,:width,:height,:measurement,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("profile_id") int profile_id, @Param("box") String box,
+//              @Param("x_pos") String x_pos, @Param("y_pos") String y_pos,
+//              @Param("width") String width, @Param("height") String height,
+//              @Param("measurement") String measurement, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.Position WHERE position_id =:position_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Position WHERE position_id =:position_id", nativeQuery = true)
     List<Position> getPositionById(@Param("position_id") int position_id);
 
-    @Query(value = "SELECT * FROM cms.Position WHERE device_id =:device_id AND status not in ('deleted')", nativeQuery = true)
-    List<Position> getPositionByDeviceId(@Param("device_id") int device_id);
+    @Query(value = "SELECT * from cms_2.Position WHERE profile_id =:profile_id AND status not in ('deleted')", nativeQuery = true)
+    List<Position> getPositionByProfileId(@Param("profile_id") int profile_id);
 
-    @Query(value = "SELECT * FROM cms.Position WHERE position_name like :position_name", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Position WHERE position_name like :position_name", nativeQuery = true)
     List<Position> getPositionByName(@Param("position_name") String position_name);
 
     @Modifying
-    @Query(value = "UPDATE cms.Position SET device_id=:device_id,box=:box,x_pos=:x_pos,y_pos=:y_pos," +
+    @Query(value = "UPDATE cms_2.Position SET box=:box,x_pos=:x_pos,y_pos=:y_pos," +
             "width=:width,height=:height,measurement=:measurement,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE position_id =:position_id ", nativeQuery = true)
-    void updatePosition(@Param("device_id") int device_id, @Param("box") String box, @Param("x_pos") String x_pos, @Param("y_pos") String y_pos,
+    void updatePosition(@Param("box") String box, @Param("x_pos") String x_pos, @Param("y_pos") String y_pos,
                         @Param("width") String width, @Param("height") String height, @Param("status") String status,
                         @Param("measurement") String measurement, @Param("updated_by") String updated_by, @Param("position_id") int position_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Position SET status = 'deleted',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms_2.Position SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE position_id=:position_id", nativeQuery = true)
     void deletePosition(@Param("position_id") int position_id, @Param("updated_by") String updated_by);
 
 
     @Query(value = "SELECT distinct(po.*) " +
-            "FROM cms.position po " +
-            "INNER JOIN cms.playlist pl ON po.position_id = pl.position_id  " +
-            "WHERE po.device_id = :device_id AND pl.status <> 'deleted'", nativeQuery = true)
-    List<Position> getPositionByDeviceIdBasedOnPlaylist(@Param("device_id") int device_id);
+            "from cms_2.position po " +
+            "INNER JOIN cms_2.playlist pl ON po.position_id = pl.position_id  " +
+            "WHERE po.profile_id = :profile_id AND pl.status <> 'deleted'", nativeQuery = true)
+    List<Position> getPositionByProfileIdBasedOnPlaylist(@Param("profile_id") int profile_id);
 }

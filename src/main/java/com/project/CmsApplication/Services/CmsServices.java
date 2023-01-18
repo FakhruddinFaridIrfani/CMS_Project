@@ -5,7 +5,7 @@ import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
-import org.apache.commons.io.FileUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.json.JSONArray;
@@ -13,7 +13,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import javax.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -36,6 +34,7 @@ import java.util.*;
 import java.util.List;
 
 @Service
+@Slf4j
 public class CmsServices {
 
     private static final int BUFFER_SIZE = 8192;
@@ -89,6 +88,9 @@ public class CmsServices {
 
     @Autowired
     LicenseRepository licenseRepository;
+
+    @Autowired
+    ProfileRepository profileRepository;
 
     @Autowired
     CmsEncryptDecrypt cmsEncryptDecrypt;
@@ -1696,6 +1698,10 @@ public class CmsServices {
     //DEVICE SECTION
     public BaseResponse<String> addNewDevice(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        int company_id;
+        int region_id;
+        int branch_id;
+        String device_name;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1707,9 +1713,13 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            company_id = jsonInput.getInt("company_id");
+            region_id = jsonInput.getInt("region_id");
+            branch_id = jsonInput.getInt("branch_id");
+            device_name = jsonInput.optString("device_name");
 
             //Device name  check
-            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(jsonInput.optString("device_name"));
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(device_name);
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -1722,7 +1732,26 @@ public class CmsServices {
                 response.setMessage("Device name can't be empty");
                 return response;
             }
-            deviceRepository.save(jsonInput.optString("device_name"), userOnProcess);
+
+            List<Company> companyList = getCompanyById(company_id);
+            if (companyList.size() == 0) {
+                return notFoundComponent("Company");
+            }
+            Device device = new Device();
+            device.setDevice_name(device_name);
+            device.setCompany_id(company_id);
+            device.setRegion_id(region_id);
+            device.setBranch_id(branch_id);
+            device.setLicense_key("");
+            device.setDevice_unique_id("");
+            device.setStatus("active");
+            device.setCreated_by(userOnProcess);
+            device.setCreated_date(new Date());
+            device.setUpdated_by("");
+            device.setUpdated_date(new Date());
+
+
+            deviceRepository.save(device);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device successfully Added");
@@ -1746,6 +1775,9 @@ public class CmsServices {
         String status;
         String created_by;
         String updated_by;
+        String branch_id;
+        String region_id;
+        String company_id;
         try {
             jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1762,6 +1794,18 @@ public class CmsServices {
             if (jsonInput.optString("updated_date").length() > 0) {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
             device_name = "%" + jsonInput.optString("device_name") + "%";
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
@@ -1769,7 +1813,7 @@ public class CmsServices {
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Device> getDeviceResult = deviceRepository.getDeviceList(device_name, status, created_by, created_date, updated_by, updated_date);
+            List<Device> getDeviceResult = deviceRepository.getDeviceList(branch_id, region_id, company_id, device_name, status, created_by, created_date, updated_by, updated_date);
             for (Device device : getDeviceResult) {
                 device.setLicense_key(cmsEncryptDecrypt.decrypt(device.getLicense_key()));
             }
@@ -1788,7 +1832,9 @@ public class CmsServices {
 
     public BaseResponse<Device> updateDevice(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String device_name;
+        String status;
+        int device_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1800,9 +1846,11 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-
+            device_name = jsonInput.optString("device_name");
+            status = jsonInput.optString("status");
+            device_id = jsonInput.optInt("device_id");
             //Device name  check
-            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(jsonInput.optString("device_name"), jsonInput.optInt("device_id"));
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(device_name, device_id);
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -1821,7 +1869,7 @@ public class CmsServices {
                 response.setMessage("Status must be filled, can't be empty");
                 return response;
             }
-            deviceRepository.updateDevice(jsonInput.optString("device_name"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("device_id"));
+            deviceRepository.updateDevice(device_name, status, userOnProcess, device_id);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device successfully Updated");
@@ -1850,14 +1898,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
 
-            //Check position of device
-            List<Position> devicePosition = positionRepository.getPositionByDeviceId(jsonInput.optInt("device_id"));
-            if (devicePosition.size() > 0) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("Device still has " + devicePosition.size() + " position(s)");
-                return response;
-            }
+
             deviceRepository.deleteDevice(jsonInput.optInt("device_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
@@ -1948,6 +1989,13 @@ public class CmsServices {
     //POSITION SECTION
     public BaseResponse<String> addNewPosition(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        int profile_id;
+        String box;
+        String x_pos;
+        String y_pos;
+        String width;
+        String height;
+        String measurement;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1959,8 +2007,34 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            positionRepository.save(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
-                    jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("measurement"), userOnProcess);
+            profile_id = jsonInput.optInt("profile_id");
+            if (profile_id == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Please select exisitng profile");
+                return response;
+            }
+            box = jsonInput.optString("box");
+            x_pos = jsonInput.optString("x_pos");
+            y_pos = jsonInput.optString("y_pos");
+            width = jsonInput.optString("width");
+            height = jsonInput.optString("height");
+            measurement = jsonInput.optString("measurement");
+            Position position = new Position();
+            position.setProfile_id(profile_id);
+            position.setBox(box);
+            position.setX_pos(x_pos);
+            position.setY_pos(y_pos);
+            position.setWidth(width);
+            position.setHeight(height);
+            position.setStatus("active");
+            position.setMeasurement(measurement);
+            position.setCreated_by(userOnProcess);
+            position.setCreated_date(new Date());
+            position.setUpdated_by("");
+            position.setUpdated_date(new Date());
+
+            positionRepository.save(position);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position successfully Added");
@@ -1980,7 +2054,7 @@ public class CmsServices {
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
-        String device_id;
+        String profile_id;
         String box;
         String x_pos;
         String y_pos;
@@ -2007,9 +2081,9 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
 
-            device_id = jsonInput.optInt("device_id") + "";
-            if (device_id.isEmpty() || device_id.compareToIgnoreCase("null") == 0 || device_id.compareToIgnoreCase("0") == 0) {
-                device_id = "%%";
+            profile_id = jsonInput.optInt("profile_id") + "";
+            if (profile_id.isEmpty() || profile_id.compareToIgnoreCase("null") == 0 || profile_id.compareToIgnoreCase("0") == 0) {
+                profile_id = "%%";
             }
             status = jsonInput.optString("status");
             if (status.isEmpty()) {
@@ -2024,14 +2098,14 @@ public class CmsServices {
 
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Position> getPositionResult = positionRepository.getPositionList(device_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date);
+            List<Position> getPositionResult = positionRepository.getPositionList(profile_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date);
 
             for (int i = 0; i < getPositionResult.size(); i++) {
                 Map resultMap = new HashMap();
-                List<Device> devices = deviceRepository.getDeviceById(getPositionResult.get(i).getDevice_id());
+                List<Profile> profiles = profileRepository.getProfileById(getPositionResult.get(i).getProfile_id());
                 resultMap.put("position", getPositionResult.get(i));
-                resultMap.put("device_name", devices.get(0).getDevice_name());
-                resultMap.put("device_id", devices.get(0).getDevice_id());
+                resultMap.put("profile_name", profiles.get(0).getProfile_name());
+                resultMap.put("profile_id", profiles.get(0).getProfile_id());
 
                 result.add(resultMap);
             }
@@ -2051,7 +2125,14 @@ public class CmsServices {
 
     public BaseResponse<Position> updatePosition(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String box;
+        String x_pos;
+        String y_pos;
+        String width;
+        String height;
+        String measurement;
+        String status;
+        int position_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2063,9 +2144,24 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-            positionRepository.updatePosition(jsonInput.optInt("device_id"), jsonInput.optString("box"), jsonInput.optString("x_pos"), jsonInput.optString("y_pos"),
-                    jsonInput.optString("width"), jsonInput.optString("height"), jsonInput.optString("status"),
-                    jsonInput.optString("measurement"), userOnProcess, jsonInput.optInt("position_id"));
+            box = jsonInput.optString("box");
+            x_pos = jsonInput.optString("x_pos");
+            y_pos = jsonInput.optString("y_pos");
+            width = jsonInput.optString("width");
+            height = jsonInput.optString("height");
+            measurement = jsonInput.optString("measurement");
+            status = jsonInput.optString("status");
+            position_id = jsonInput.getInt("position_id");
+
+            List<Position> positionList = getPositionById(position_id);
+            if (positionList.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Cant' find position with id :" + position_id);
+                return response;
+            }
+
+            positionRepository.updatePosition(box, x_pos, y_pos, width, height, status, measurement, userOnProcess, position_id);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Position successfully Updated");
@@ -2081,7 +2177,7 @@ public class CmsServices {
 
     public BaseResponse<Position> deletePosition(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        int position_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2093,13 +2189,21 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            position_id = jsonInput.optInt("position_id");
 
             //Check playlist use this position
-            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByPositionId(jsonInput.optInt("position_id"));
+            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByPositionId(position_id);
             if (usedPositionOnPlaylist.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Position still used on " + usedPositionOnPlaylist.size() + " playlist(s)");
+                response.setMessage("Position still used on " + usedPositionOnPlaylist.size() + " active playlist(s)");
+                return response;
+            }
+            List<Position> positionList = getPositionById(position_id);
+            if (positionList.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Cant' find position with id :" + position_id);
                 return response;
             }
 
@@ -2444,6 +2548,7 @@ public class CmsServices {
     //PLAYLIST SECTION
     public BaseResponse<String> addNewPlaylist(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2578,8 +2683,8 @@ public class CmsServices {
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Playlist> getResultPlayList = playlistRepository.getPlaylistList(playlist_name, branch_id, region_id, company_id, position_id, start_date,
                     end_date, sort, status, is_default, created_by, created_date, updated_by, updated_date);
-            logger.info("playlist_name: " + playlist_name + ",branch_id: " + branch_id + ",region_id: " + region_id + ",company_id:" + company_id + ",position_id: " + position_id + ",start_date: " + start_date +
-                    ",end_date: " + end_date + ",sort: " + sort + ",status: " + status + ",is_default: " + is_default + ",created_by: " + created_by + ",created_date: " + created_date + ",updated_by: " + updated_by + ",updated_date: " + updated_date);
+//            logger.info("playlist_name: " + playlist_name + ",branch_id: " + branch_id + ",region_id: " + region_id + ",company_id:" + company_id + ",position_id: " + position_id + ",start_date: " + start_date +
+//                    ",end_date: " + end_date + ",sort: " + sort + ",status: " + status + ",is_default: " + is_default + ",created_by: " + created_by + ",created_date: " + created_date + ",updated_by: " + updated_by + ",updated_date: " + updated_date);
 
             for (int i = 0; i < getResultPlayList.size(); i++) {
                 logger.info("playlist count : " + getResultPlayList);
@@ -2613,7 +2718,7 @@ public class CmsServices {
                 logger.info("company ok");
                 List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
                 logger.info("position ok");
-                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getDevice_id());
+                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getProfile_id());
                 logger.info("device ok");
 
 
@@ -2720,7 +2825,7 @@ public class CmsServices {
         return getPlaylistResource;
     }
 
-    public BaseResponse getPlaylistByDeviceId(String input) throws SQLException, Exception {
+    public BaseResponse getPlaylistByProfileId(String input) throws SQLException, Exception {
         BaseResponse response = new BaseResponse();
         List results = new ArrayList();
         try {
@@ -2733,8 +2838,8 @@ public class CmsServices {
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
-            int device_id = jsonInput.getInt("device_id");
-            List<Position> getPositionByDeviceId = positionRepository.getPositionByDeviceIdBasedOnPlaylist(device_id);
+            int profile_id = jsonInput.getInt("profile_id");
+            List<Position> getPositionByDeviceId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
             for (int i = 0; i < getPositionByDeviceId.size(); i++) {
                 Map resultData = new HashMap();
                 Position position = getPositionByDeviceId.get(i);
@@ -3342,6 +3447,8 @@ public class CmsServices {
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
+            int company_id = (int) auth.get("company_id");
+
 //            String userOnProcess = auth.get("user_name").toString();
 //            Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
 
@@ -3360,6 +3467,7 @@ public class CmsServices {
                     count++;
                     LicenseKey licenseKeys = new LicenseKey();
                     licenseKeys.setLicense_key(line);
+                    licenseKeys.setCompany_id(company_id);
                     licenseRepository.save(licenseKeys);
                 }
             }
@@ -3446,9 +3554,11 @@ public class CmsServices {
             if (usersList.size() > 0) {
                 result.put("valid", true);
                 result.put("user_name", usersList.get(0).getUser_name());
+                result.put("company_id", usersList.get(0).getCompany_id());
             } else {
                 result.put("valid", false);
                 result.put("user_name", "");
+                result.put("company_id", "");
             }
 
         } catch (Exception e) {
@@ -3910,6 +4020,303 @@ public class CmsServices {
         return response;
     }
 
+    //PROFILE SECTION
+
+    public BaseResponse<String> addNewProfile(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        int company_id;
+        int region_id;
+        int branch_id;
+        String profile_name;
+        String description;
+        String created_by;
+        Date created_date;
+        String updated_by;
+        Date updated_date;
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            //Token Auth
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+
+            company_id = jsonInput.getInt("company_id");
+            region_id = jsonInput.getInt("region_id");
+            branch_id = jsonInput.getInt("branch_id");
+            profile_name = jsonInput.optString("profile_name");
+            if (profile_name.isEmpty()) {
+                response.setSuccess(false);
+                response.setStatus("500");
+                response.setMessage("Profile name can't be empty");
+                return response;
+            }
+            description = jsonInput.optString("description");
+
+
+            //Profile_name  check
+            List<Profile> profileNameCheckResult = profileRepository.getProfileByProfileName(profile_name, branch_id, region_id, company_id);
+            if (profileNameCheckResult.size() > 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Profile name already exist / used");
+                return response;
+            }
+
+            if (jsonInput.optInt("company_id") == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Unknown company, please choose existing company.");
+                return response;
+            }
+            Profile profile = new Profile();
+            profile.setBranch_id(branch_id);
+            profile.setRegion_id(region_id);
+            profile.setCompany_id(company_id);
+            profile.setProfile_name(profile_name);
+            profile.setDescription(description);
+            profile.setStatus_profile("active");
+            profile.setStatus("active");
+            profile.setCreated_by(userOnProcess);
+            profile.setUpdated_by("");
+            profile.setCreated_date(new Date());
+            profile.setUpdated_date(new Date());
+            profileRepository.save(profile);
+
+
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Profile successfully Added");
+            logger.info("Profile successfully Added");
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage("Failed create profile : " + e.getMessage());
+            logger.info("Failed create profile : {}", e.getMessage());
+        }
+
+        return response;
+    }
+
+    public BaseResponse<List<Map<String, Object>>> getProfileList(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String created_date = "%%";
+        String updated_date = "%%";
+        String branch_id;
+        String region_id;
+        String company_id;
+        String profile_name;
+        String description;
+        String status_profile;
+        String created_by;
+        String updated_by;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            if (jsonInput.optString("created_date").length() > 0) {
+                created_date = "%" + dateFormatter.formatDate(jsonInput.optString("created_date")) + "%";
+            }
+            if (jsonInput.optString("updated_date").length() > 0) {
+                updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+            description = "%" + jsonInput.optString("description") + "%";
+
+            status_profile = jsonInput.optString("status_profile");
+            if (status_profile.isEmpty()) {
+                status_profile = "%%";
+            }
+            profile_name = jsonInput.optString("profile_name");
+            if (profile_name.isEmpty()) {
+                profile_name = "%%";
+            }
+            created_by = "%" + jsonInput.optString("created_by") + "%";
+            updated_by = "%" + jsonInput.optString("updated_by") + "%";
+            List<Profile> getProfileResult = profileRepository.getProfileList(branch_id, region_id, company_id, profile_name, description, status_profile, created_by, created_date, updated_by, updated_date);
+
+            for (int i = 0; i < getProfileResult.size(); i++) {
+                Profile profile = getProfileResult.get(i);
+                Map resultMap = new HashMap();
+                if (profile.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(profile.getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (profile.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(getProfileResult.get(i).getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (profile.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(getProfileResult.get(i).getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+
+                resultMap.put("profile", getProfileResult.get(i));
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Profile Listed");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse<Profile> updateProfile(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+        int profile_id;
+        String profile_name;
+        String description;
+        int company_id = 0;
+        int region_id = 0;
+        int branch_id = 0;
+        String status_profile;
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            profile_id = jsonInput.getInt("profile_id");
+            profile_name = jsonInput.optString("profile_name");
+            status_profile = jsonInput.getString("status_profile");
+            if (profile_name.isEmpty()) {
+                response.setSuccess(false);
+                response.setStatus("500");
+                response.setMessage("Profile name can't be empty");
+                return response;
+            }
+            description = jsonInput.optString("description");
+            if (getProfileById(profile_id).size() > 0) {
+                Profile profile = getProfileById(profile_id).get(0);
+                branch_id = profile.getBranch_id();
+                region_id = profile.getRegion_id();
+                company_id = profile.getCompany_id();
+            } else {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Profile with id " + profile_id + " not found");
+                return response;
+            }
+
+            //Profile name check
+            List<Profile> profileNameCheckResult = profileRepository.getProfileByTittleExceptId(profile_name, branch_id, region_id, company_id, profile_id);
+            if (profileNameCheckResult.size() > 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Profile name already exist / used");
+                return response;
+            }
+            if (company_id == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Unknown company, please choose existing company.");
+                return response;
+            }
+            profileRepository.updateProfile(profile_name, description, status_profile, userOnProcess, profile_id);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Profile successfully Updated");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
+
+    public BaseResponse<Profile> deleteProfile(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse();
+        int profile_id;
+
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            profile_id = jsonInput.getInt("profile_id");
+            profileRepository.deleteProfile(profile_id, userOnProcess);
+            List<Position> profilePosition = positionRepository.getPositionByProfileId(profile_id);
+            if (profilePosition.size() > 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Profile still has " + profilePosition.size() + " position(s)");
+                return response;
+            }
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Profile successfully deleted");
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public List<Profile> getProfileById(int profile_id) {
+        List<Profile> getProfileResult = new ArrayList<>();
+        getProfileResult = profileRepository.getProfileById(profile_id);
+        return getProfileResult;
+    }
+
     //CONFIGURATION SECTION
 
 //    public BaseResponse<List<Users>> queryBuilder(String input) throws JSONException {
@@ -3936,4 +4343,12 @@ public class CmsServices {
 
     //SCHEDULER SECTION
 
+    public BaseResponse notFoundComponent(String component) {
+        BaseResponse response = new BaseResponse();
+        response.setSuccess(false);
+        response.setStatus("404");
+        response.setMessage(component + " Not found");
+
+        return response;
+    }
 }

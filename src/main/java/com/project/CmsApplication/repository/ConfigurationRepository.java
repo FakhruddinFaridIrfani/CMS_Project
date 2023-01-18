@@ -15,12 +15,12 @@ import java.util.List;
 public interface ConfigurationRepository extends JpaRepository<Configuration, Integer> {
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Configuration(configuration_name,configuration_value) " +
+    @Query(value = "INSERT INTO cms_2.Configuration(configuration_name,configuration_value) " +
             "VALUES(:configuration_name,:configuration_value)", nativeQuery = true)
     void save(@Param("configuration_name") String configuration_name, @Param("configuration_value") String configuration_value);
 
     @Modifying
-    @Query(value = "UPDATE cms.Configuration SET configuration_value=:configuration_value" +
+    @Query(value = "UPDATE cms_2.Configuration SET configuration_value=:configuration_value" +
             " WHERE configuration_id =:configuration_id ", nativeQuery = true)
     void updateConfiguration(@Param("configuration_value") String configuration_value,
                      @Param("configuration_id") int configuration_id);

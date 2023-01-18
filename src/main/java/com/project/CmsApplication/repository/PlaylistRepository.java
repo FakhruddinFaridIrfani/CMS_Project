@@ -15,7 +15,7 @@ import java.util.List;
 @Transactional
 public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE " +
+    @Query(value = "SELECT * from cms_2.Playlist WHERE " +
             "lower(playlist_name) like lower(:playlist_name) AND " +
             "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
             "CAST(position_id AS VARCHAR) like :position_id AND " +
@@ -38,7 +38,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
                                    @Param("updated_by") String updated_by, @Param("updated_date") String updated_at);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",is_default,created_by,created_date,updated_by,updated_date) " +
+    @Query(value = "INSERT INTO cms_2.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",is_default,created_by,created_date,updated_by,updated_date) " +
             "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:is_default,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
     void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
               @Param("region_id") int region_id, @Param("company_id") int company_id,
@@ -46,26 +46,26 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
               @Param("start_date") String start_date, @Param("end_date") String end_date,
               @Param("sort") int sort, @Param("is_default") boolean is_default, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE playlist_id =:playlist_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE playlist_id =:playlist_id", nativeQuery = true)
     List<Playlist> getPlaylistById(@Param("playlist_id") int playlist_id);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
     List<Playlist> getPlaylistByBranchId(@Param("branch_id") int branch_id);
 
 
-//    @Query(value = "SELECT * FROM cms.Playlist WHERE resource_id =:resource_id AND status not in ('deleted')", nativeQuery = true)
+//    @Query(value = "SELECT * from cms_2.Playlist WHERE resource_id =:resource_id AND status not in ('deleted')", nativeQuery = true)
 //    List<Playlist> getPlaylistByResourceId(@Param("resource_id") int resource_id);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
     List<Playlist> getPlaylistByName(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
                                      @Param("region_id") int region_id, @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND playlist_id not in (:playlist_id) AND status not in ('deleted')  AND branch_id =:branch_id AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE lower(playlist_name) = lower(:playlist_name) AND playlist_id not in (:playlist_id) AND status not in ('deleted')  AND branch_id =:branch_id AND region_id=:region_id AND company_id=:company_id", nativeQuery = true)
     List<Playlist> getPlaylistByNameExceptId(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
                                              @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("playlist_id") int playlist_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Playlist SET playlist_name=:playlist_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,position_id=:position_id," +
+    @Query(value = "UPDATE cms_2.Playlist SET playlist_name=:playlist_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,position_id=:position_id," +
             "start_date = CAST(:start_date AS timestamp),end_date=CAST(:end_date AS timestamp),status=:status,is_default=:is_default," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE playlist_id =:playlist_id ", nativeQuery = true)
     void updatePlaylist(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
@@ -76,24 +76,24 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
                         @Param("updated_by") String updated_by, @Param("playlist_id") int playlist_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Playlist SET status = 'deleted',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms_2.Playlist SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE playlist_id=:playlist_id", nativeQuery = true)
     void deletePlaylist(@Param("playlist_id") int playlist_id, @Param("updated_by") String updated_by);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
     List<Playlist> getExpiredPlaylistId();
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE branch_id=:branch_id AND position_id=:position_id AND status= 'active' ORDER BY \"sort\" DESC LIMIT 1 ", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE branch_id=:branch_id AND position_id=:position_id AND status= 'active' ORDER BY \"sort\" DESC LIMIT 1 ", nativeQuery = true)
     List<Playlist> getSortOrder(@Param("position_id") int position_id, @Param("branch_id") int branch_id);
 
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE lower(playlist_name) = lower(:playlist_name)", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE lower(playlist_name) = lower(:playlist_name)", nativeQuery = true)
     List<Playlist> getPlaylistByNameInsertedValues(@Param("playlist_name") String playlist_name);
 
-    @Query(value = "SELECT * FROM cms.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
     List<Playlist> getExpiredPlaylist();
 
-    @Query(value = "SELECT * FROM cms.playlist where position_id = :position_id AND status <> 'deleted'", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.playlist where position_id = :position_id AND status <> 'deleted' AND status <> 'inactive'", nativeQuery = true)
     List<Playlist> getPlaylistByPositionId(@Param("position_id") int position_id);
 
 

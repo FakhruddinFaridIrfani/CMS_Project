@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "playlist_resource", schema = "cms")
+@Table(name = "playlist_resource", schema = "cms_2")
 public class PlaylistResource {
     @Id
     @Column(name = "playlist_resource_id", columnDefinition = "serial")
@@ -29,7 +29,7 @@ public class PlaylistResource {
     private int resource_id;
 
     @NotNull
-    @Column(name = "order")
+    @Column(name = "resource_order")
     private int order;
 
 
