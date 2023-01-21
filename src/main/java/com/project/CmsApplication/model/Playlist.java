@@ -34,9 +34,10 @@ public class Playlist {
     @Column(name = "company_id")
     private int company_id;
 
+
     @NotNull
-    @Column(name = "position_id")
-    private int position_id;
+    @Column(name = "profile_id")
+    private int profile_id;
 
     @NotNull
     @Column(name = "is_default")
@@ -110,14 +111,6 @@ public class Playlist {
 
     public void setBranch_id(int branch_id) {
         this.branch_id = branch_id;
-    }
-
-    public int getPosition_id() {
-        return position_id;
-    }
-
-    public void setPosition_id(int position_id) {
-        this.position_id = position_id;
     }
 
     public Date getStart_date() {
@@ -200,24 +193,11 @@ public class Playlist {
         this.is_default = is_default;
     }
 
-    @Override
-    public String toString() {
-        return "Playlist{" +
-                "playlist_id=" + playlist_id +
-                ", status='" + status + '\'' +
-                ", playlist_name='" + playlist_name + '\'' +
-                ", branch_id=" + branch_id +
-                ", region_id=" + region_id +
-                ", company_id=" + company_id +
-                ", position_id=" + position_id +
-                ", is_default=" + is_default +
-                ", start_date=" + start_date +
-                ", end_date=" + end_date +
-                ", sort=" + sort +
-                ", created_by='" + created_by + '\'' +
-                ", created_date=" + created_date +
-                ", updated_by='" + updated_by + '\'' +
-                ", updated_date=" + updated_date +
-                '}';
+    public int getProfile_id() {
+        return profile_id;
+    }
+
+    public void setProfile_id(int profile_id) {
+        this.profile_id = profile_id;
     }
 }

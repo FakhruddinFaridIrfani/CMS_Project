@@ -37,7 +37,7 @@ public class Resource {
 
     @NotNull
     @Column(name = "duration")
-    private String duration;
+    private int duration;
 
     @NotNull
     @Column(name = "status")
@@ -112,11 +112,11 @@ public class Resource {
         this.file = file;
     }
 
-    public String getDuration() {
+    public int getDuration() {
         return duration;
     }
 
-    public void setDuration(String duration) {
+    public void setDuration(int duration) {
         this.duration = duration;
     }
 

@@ -36,13 +36,13 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
                                    @Param("updated_by") String updated_by,
                                    @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Resource(status,resource_name,\"type\",thumbnail,\"file\",duration,stretch,created_by,created_date,updated_by,updated_date,url_resource) " +
-            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:created_by,current_timestamp,:created_by,current_timestamp,:url_resource)", nativeQuery = true)
-    void save(@Param("resource_name") String resource_name, @Param("type") String type,
-              @Param("thumbnail") String thumbnail, @Param("file") String file,
-              @Param("duration") int duration, @Param("stretch") String stretch,
-              @Param("created_by") String created_by, @Param("url_resource") String url_resource);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Resource(status,resource_name,\"type\",thumbnail,\"file\",duration,stretch,created_by,created_date,updated_by,updated_date,url_resource) " +
+//            "VALUES('active',:resource_name,:type,:thumbnail,:file,:duration,:stretch,:created_by,current_timestamp,:created_by,current_timestamp,:url_resource)", nativeQuery = true)
+//    void save(@Param("resource_name") String resource_name, @Param("type") String type,
+//              @Param("thumbnail") String thumbnail, @Param("file") String file,
+//              @Param("duration") int duration, @Param("stretch") String stretch,
+//              @Param("created_by") String created_by, @Param("url_resource") String url_resource);
 
     @Query(value = "SELECT * from cms_2.Resource WHERE resource_id =:resource_id", nativeQuery = true)
     List<Resource> getResourceById(@Param("resource_id") int resource_id);

@@ -33,11 +33,11 @@ public interface CompanyRepository extends JpaRepository<Company, Integer> {
                                  @Param("created_date") String created_date, @Param("updated_by") String updated_by,
                                  @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.company(company_name,company_address,company_phone,company_email,status,created_by,created_date,updated_by,updated_date) " +
-            "VALUES(:company_name,:company_address,:company_phone,:company_email,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("company_name") String company_name, @Param("company_address") String company_address, @Param("company_phone") String company_phone,
-              @Param("company_email") String company_email, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.company(company_name,company_address,company_phone,company_email,status,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES(:company_name,:company_address,:company_phone,:company_email,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("company_name") String company_name, @Param("company_address") String company_address, @Param("company_phone") String company_phone,
+//              @Param("company_email") String company_email, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.company WHERE company_id =:company_id", nativeQuery = true)
     List<Company> getCompanyById(@Param("company_id") int company_id);

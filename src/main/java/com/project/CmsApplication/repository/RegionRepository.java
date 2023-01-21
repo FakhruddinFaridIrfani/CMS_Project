@@ -34,10 +34,10 @@ public interface RegionRepository extends JpaRepository<Region, Integer> {
                                @Param("updated_by") String updated_by,
                                @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Region(status,company_id,region_name,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:company_id,:region_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("company_id") int company_id, @Param("region_name") String region_name, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Region(status,company_id,region_name,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES('active',:company_id,:region_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("company_id") int company_id, @Param("region_name") String region_name, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.Region WHERE region_id =:region_id", nativeQuery = true)
     List<Region> getRegionById(@Param("region_id") int region_id);

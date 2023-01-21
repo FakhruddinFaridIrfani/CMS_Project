@@ -14,10 +14,10 @@ import java.util.List;
 @Transactional
 public interface ConfigurationRepository extends JpaRepository<Configuration, Integer> {
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Configuration(configuration_name,configuration_value) " +
-            "VALUES(:configuration_name,:configuration_value)", nativeQuery = true)
-    void save(@Param("configuration_name") String configuration_name, @Param("configuration_value") String configuration_value);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Configuration(configuration_name,configuration_value) " +
+//            "VALUES(:configuration_name,:configuration_value)", nativeQuery = true)
+//    void save(@Param("configuration_name") String configuration_name, @Param("configuration_value") String configuration_value);
 
     @Modifying
     @Query(value = "UPDATE cms_2.Configuration SET configuration_value=:configuration_value" +

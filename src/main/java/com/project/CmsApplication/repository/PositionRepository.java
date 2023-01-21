@@ -53,7 +53,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
     @Query(value = "SELECT * from cms_2.Position WHERE position_id =:position_id", nativeQuery = true)
     List<Position> getPositionById(@Param("position_id") int position_id);
 
-    @Query(value = "SELECT * from cms_2.Position WHERE profile_id =:profile_id AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Position WHERE profile_id =:profile_id AND status <> 'deleted'", nativeQuery = true)
     List<Position> getPositionByProfileId(@Param("profile_id") int profile_id);
 
     @Query(value = "SELECT * from cms_2.Position WHERE position_name like :position_name", nativeQuery = true)
@@ -75,7 +75,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
 
     @Query(value = "SELECT distinct(po.*) " +
             "from cms_2.position po " +
-            "INNER JOIN cms_2.playlist pl ON po.position_id = pl.position_id  " +
+            "INNER JOIN cms_2.playlist pl ON po.profile_id = pl.profile_id  " +
             "WHERE po.profile_id = :profile_id AND pl.status <> 'deleted'", nativeQuery = true)
     List<Position> getPositionByProfileIdBasedOnPlaylist(@Param("profile_id") int profile_id);
 }

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -95,6 +97,9 @@ public class CmsServices {
     @Autowired
     CmsEncryptDecrypt cmsEncryptDecrypt;
 
+    @Autowired
+    ConfigurationRepository configurationRepository;
+
 
 //    @Autowired
 //    @Qualifier("entityManagerFactory")
@@ -124,6 +129,7 @@ public class CmsServices {
     //ROLE SECTION
     public BaseResponse<String> addNewRole(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String role_name;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -135,15 +141,25 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            role_name = jsonInput.optString("role_name");
             //Existing Role Name check
-            List<Role> roleNameCheckResult = roleRepository.getRoleByName(jsonInput.optString("role_name"));
+            List<Role> roleNameCheckResult = roleRepository.getRoleByName(role_name);
             if (roleNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Role name already exist / used");
                 return response;
             }
-            roleRepository.save(jsonInput.optString("role_name"), userOnProcess);
+
+            //Save object role
+            Role role = new Role();
+            role.setRole_name(role_name);
+            role.setStatus("active");
+            role.setCreated_by(userOnProcess);
+            role.setCreated_date(new Date());
+            role.setUpdated_by("");
+            role.setUpdated_date(new Date());
+            roleRepository.save(role);
 
             //SET DEFAULT PRIVILEGE TO INSERTED ROLE
             Role roleInserted = roleRepository.getRoleByName(jsonInput.optString("role_name")).get(0);
@@ -366,13 +382,18 @@ public class CmsServices {
     //USERS SECTION
     public BaseResponse<String> addNewUsers(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        int branch_id;
+        int region_id;
+        int company_id;
+        int role_id;
+        String user_name;
+        String user_password;
+        String user_email;
+        String user_full_name;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-            int branch_id;
-            int region_id;
-            int company_id;
-            int role_id;
+
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("500");
@@ -382,19 +403,24 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             String userToken = Long.toHexString(new Date().getTime());
+            branch_id = jsonInput.optInt("branch_id");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
+            role_id = jsonInput.optInt("role_id");
+            user_name = jsonInput.optString("user_name");
+            user_password = jsonInput.optString("user_password");
+            user_email = jsonInput.optString("user_email");
+            user_full_name = jsonInput.optString("user_full_name");
 
             //user_name check
-            List<Users> userNameCheckResult = usersRepository.getUsersByName(jsonInput.optString("user_name"));
+            List<Users> userNameCheckResult = usersRepository.getUsersByName(user_name);
             if (userNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("User name already exist / used");
                 return response;
             }
-            branch_id = jsonInput.optInt("branch_id");
-            region_id = jsonInput.optInt("region_id");
-            company_id = jsonInput.optInt("company_id");
-            role_id = jsonInput.optInt("role_id");
+
             if (role_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -402,9 +428,7 @@ public class CmsServices {
                 return response;
             }
 
-            usersRepository.save(jsonInput.optString("user_name"),
-                    jsonInput.optString("user_password"), jsonInput.optString("user_email"),
-                    jsonInput.optString("user_full_name"), userOnProcess, userToken, branch_id, region_id, company_id, role_id);
+            usersRepository.save(user_name, user_password, user_email, user_full_name, userOnProcess, userToken, branch_id, region_id, company_id, role_id);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("User successfully Added");
@@ -809,6 +833,10 @@ public class CmsServices {
     //COMPANY SECTION
     public BaseResponse<String> addNewCompany(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String company_name;
+        String company_address;
+        String company_phone;
+        String company_email;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -820,9 +848,12 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-
+            company_name = jsonInput.optString("company_name");
+            company_address = jsonInput.optString("company_address");
+            company_phone = jsonInput.optString("company_phone");
+            company_email = jsonInput.optString("company_email");
             //company name  check
-            if (jsonInput.optString("company_name").isEmpty()) {
+            if (company_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Company name can't be empty");
@@ -830,7 +861,7 @@ public class CmsServices {
             }
 
 
-            List<Company> companyNameCheckResult = companyRepository.getCompanyByName(jsonInput.optString("company_name"));
+            List<Company> companyNameCheckResult = companyRepository.getCompanyByName(company_name);
             if (companyNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -838,8 +869,15 @@ public class CmsServices {
                 return response;
             }
 
-            companyRepository.save(jsonInput.optString("company_name"), jsonInput.optString("company_address"),
-                    jsonInput.optString("company_phone"), jsonInput.optString("company_email"), userOnProcess);
+            //Save company object
+            Company companies = new Company();
+            companies.setCompany_name(company_name);
+            companies.setCompany_address(company_address);
+            companies.setCompany_phone(company_phone);
+            companies.setCompany_email(company_email);
+            companyRepository.save(companies);
+
+
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Company successfully Added");
@@ -999,6 +1037,8 @@ public class CmsServices {
     //REGION SECTION
     public BaseResponse<String> addNewRegion(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String region_name;
+        int company_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1010,6 +1050,8 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            region_name = jsonInput.optString("region_name");
+            company_id = jsonInput.optInt("company_id");
 
             //Region name  check
             if (jsonInput.optString("region_name").isEmpty()) {
@@ -1024,14 +1066,24 @@ public class CmsServices {
                 response.setMessage("Company can't be empty");
                 return response;
             }
-            List<Region> regionNameCheckResult = regionRepository.getRegionByName(jsonInput.optString("region_name"), jsonInput.optInt("company_id"));
+            List<Region> regionNameCheckResult = regionRepository.getRegionByName(region_name, company_id);
             if (regionNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region name already exist / used");
                 return response;
             }
-            regionRepository.save(jsonInput.optInt("company_id"), jsonInput.optString("region_name"), userOnProcess);
+            //Save region object
+            Region regions = new Region();
+            regions.setRegion_name(region_name);
+            regions.setCompany_id(company_id);
+            regions.setStatus("active");
+            regions.setCreated_by(userOnProcess);
+            regions.setCreated_date(new Date());
+            regions.setUpdated_by("");
+            regions.setUpdated_date(new Date());
+
+            regionRepository.save(regions);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region successfully Added");
@@ -1206,6 +1258,9 @@ public class CmsServices {
     //BRANCH SECTION
     public BaseResponse<String> addNewBranch(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String branch_name;
+        int region_id;
+        int company_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1217,9 +1272,12 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            branch_name = jsonInput.optString("branch_name");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
 
             //Branch name  check
-            if (jsonInput.optString("branch_name").isEmpty()) {
+            if (branch_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Branch name can't be empty");
@@ -1231,22 +1289,31 @@ public class CmsServices {
                 response.setMessage("Can't select all, please select specific region");
                 return response;
             }
-            if (jsonInput.optInt("region_id") == 0) {
+            if (region_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Region can't be empty");
                 return response;
             }
 
-            List<Branch> branchNameCheckResult = branchRepository.getBranchByName(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
+            List<Branch> branchNameCheckResult = branchRepository.getBranchByName(branch_name, region_id, company_id);
             if (branchNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Branch name already exist / used");
                 return response;
             }
+            Branch branches = new Branch();
+            branches.setBranch_name(branch_name);
+            branches.setRegion_id(region_id);
+            branches.setCompany_id(company_id);
+            branches.setStatus("active");
+            branches.setCreated_by(userOnProcess);
+            branches.setCreated_date(new Date());
+            branches.setUpdated_by("");
+            branches.setUpdated_date(new Date());
 
-            branchRepository.save(jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("branch_name"), userOnProcess);
+            branchRepository.save(branches);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch successfully Added");
@@ -2190,13 +2257,14 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             position_id = jsonInput.optInt("position_id");
+            List<Position> positions = positionRepository.getPositionById(position_id);
 
             //Check playlist use this position
-            List<Playlist> usedPositionOnPlaylist = playlistRepository.getPlaylistByPositionId(position_id);
-            if (usedPositionOnPlaylist.size() > 0) {
+            List<Profile> usedPositionOnProfile = profileRepository.getProfileById(positions.get(0).getProfile_id());
+            if (usedPositionOnProfile.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Position still used on " + usedPositionOnPlaylist.size() + " active playlist(s)");
+                response.setMessage("Position still used on  active profile(s)");
                 return response;
             }
             List<Position> positionList = getPositionById(position_id);
@@ -2229,6 +2297,12 @@ public class CmsServices {
     //RESOURCE SECTION
     public BaseResponse<String> addNewResource(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String resource_name;
+        String type;
+        String file_name;
+        String url_resource;
+        int duration;
+        String stretch;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2240,8 +2314,15 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            resource_name = jsonInput.optString("resource_name");
+            type = jsonInput.optString("type");
+            file_name = jsonInput.optString("file_name");
+            url_resource = jsonInput.optString("url_resource");
+            duration = jsonInput.optInt("duration");
+            stretch = jsonInput.optString("stretch");
 
-            if (jsonInput.optString("resource_name").isEmpty()) {
+
+            if (resource_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Resource name can't be empty");
@@ -2249,7 +2330,7 @@ public class CmsServices {
             }
 
             //Resource name  check
-            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(jsonInput.optString("resource_name"));
+            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(resource_name);
             if (resourceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -2257,8 +2338,8 @@ public class CmsServices {
                 return response;
             }
 
-            if (jsonInput.optString("type").compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || jsonInput.optString("type").compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
-                String fileExtension = jsonInput.optString("file_name").split("\\.")[1];
+            if (type.compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || type.compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
+                String fileExtension = file_name.split("\\.")[1];
                 if (fileExtension.compareToIgnoreCase("pptx") != 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
@@ -2269,9 +2350,9 @@ public class CmsServices {
 
             String file = "";
             String thumbnail = "";
-            if (!jsonInput.optString("file").isEmpty() && !jsonInput.optString("file_name").isEmpty()) {
-                Map<String, String> fileAddResult = addFile(jsonInput.optString("file_name"), jsonInput.optString("file"), "resource").getData();
-                ParseToImage(jsonInput.optString("file_name"));
+            if (!jsonInput.optString("file").isEmpty() && !file_name.isEmpty()) {
+                Map<String, String> fileAddResult = addFile(file_name, jsonInput.optString("file"), "resource").getData();
+                ParseToImage(file_name);
                 file = fileAddResult.get("file");
                 thumbnail = fileAddResult.get("thumbnail");
             }
@@ -2287,11 +2368,25 @@ public class CmsServices {
 //
 //            }
 
-            if (!jsonInput.optString("url_resource").isEmpty()) {
+            if (!url_resource.isEmpty()) {
                 thumbnail = "thumbnail_url.png";
             }
-            resourceRepository.save(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail,
-                    file, jsonInput.optInt("duration"), jsonInput.optString("stretch"), userOnProcess, jsonInput.optString("url_resource"));
+            Resource resources = new Resource();
+            resources.setResource_name(resource_name);
+            resources.setType(type);
+            resources.setThumbnail(thumbnail);
+            resources.setFile(file);
+            resources.setDuration(duration);
+            resources.setStretch(stretch);
+            resources.setStatus("active");
+            resources.setCreated_by(userOnProcess);
+            resources.setCreated_date(new Date());
+            resources.setUpdated_by("");
+            resources.setUpdated_date(new Date());
+            resources.setUrl_resource(url_resource);
+
+
+            resourceRepository.save(resources);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource successfully Added");
@@ -2548,10 +2643,20 @@ public class CmsServices {
     //PLAYLIST SECTION
     public BaseResponse<String> addNewPlaylist(String input) throws Exception {
         BaseResponse response = new BaseResponse();
-
+        String playlist_name;
+        int profile_id;
+        int branch_id;
+        int region_id;
+        int company_id;
+        boolean is_default;
+        String start_date;
+        String end_date;
+        JSONArray position_list;
+        String user_token;
         try {
             JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            user_token = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(user_token);
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("500");
@@ -2560,22 +2665,41 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            playlist_name = jsonInput.optString("playlist_name");
+            branch_id = jsonInput.optInt("branch_id");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
+            profile_id = jsonInput.optInt("profile_id");
+            start_date = jsonInput.optString("start_date");
+            end_date = jsonInput.optString("end_date");
+
+            int addNewAvailability = playlistRepository.checkAddNewPlaylistAvailability(profile_id, start_date, end_date);
+            if (addNewAvailability == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Can't create playlist : Playlist already exist for that period of time (select another start date /end date)");
+                return response;
+            }
+
+
+            position_list = jsonInput.getJSONArray("position_list");
+
 
             //Playlist name  check
-            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
+            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(playlist_name, branch_id, region_id, company_id);
             if (playlistNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Playlist name already exist / used");
+                response.setMessage("Can't create playlist : Playlist name already exist / used");
                 return response;
             }
 
             int currentSort = 1;
-            List<Playlist> latestSort = playlistRepository.getSortOrder(jsonInput.optInt("position_id"), jsonInput.optInt("branch_id"));
-            if (latestSort.size() > 0) {
-                currentSort = latestSort.get(0).getSort() + 1;
-            }
-            boolean is_default;
+//            List<Playlist> latestSort = playlistRepository.getSortOrder(position_id, branch_id);
+//            if (latestSort.size() > 0) {
+//                currentSort = latestSort.get(0).getSort() + 1;
+//            }
+
             String is_defaultStr = jsonInput.optString("is_default");
             if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
                 response.setStatus("500");
@@ -2585,28 +2709,53 @@ public class CmsServices {
             } else {
                 is_default = Boolean.valueOf(is_defaultStr);
             }
+            Playlist playlist = new Playlist();
+            playlist.setCompany_id(company_id);
+            playlist.setRegion_id(region_id);
+            playlist.setBranch_id(branch_id);
+            playlist.setPlaylist_name(playlist_name);
+            playlist.setProfile_id(profile_id);
+            playlist.setStart_date(new SimpleDateFormat("yyyy-MM-dd HHmm:ss").parse(start_date));
+            playlist.setEnd_date(new SimpleDateFormat("yyyy-MM-dd HHmm:ss").parse(end_date));
+            playlist.setSort(currentSort);
+            playlist.setStatus("active");
+            playlist.setIs_default(is_default);
+            playlist.setCreated_by(userOnProcess);
+            playlist.setCreated_date(new Date());
+            playlist.setUpdated_by("");
+            playlist.setUpdated_date(new Date());
+            playlistRepository.save(playlist);
 
-            playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
-                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), currentSort, is_default, userOnProcess);
+//            playlistRepository.save(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
+//                    start_date, end_date, currentSort, is_default, userOnProcess);
 
             //Inserting resource to playlist_resource
-            JSONArray playlistResourceItem = jsonInput.getJSONArray("resource_list");
-            List<Playlist> insertedPlaylist = playlistRepository.getPlaylistByNameInsertedValues(jsonInput.optString("playlist_name"));
-//            logger.info("JSONArray : " + playlistResourceItem.toString());
-            for (int i = 0; i < playlistResourceItem.length(); i++) {
-                JSONObject obj = playlistResourceItem.getJSONObject(i);
-                addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), insertedPlaylist.get(0).getPlaylist_id(), obj.getInt("order"));
+
+            for (int a = 0; a < position_list.length(); a++) {
+                List<Playlist> insertedPlaylist = playlistRepository.getPlaylistByNameInsertedValues(playlist_name);
+                JSONObject object = position_list.getJSONObject(a);
+                JSONArray playlistResourceItem = object.getJSONArray("resource_list");
+                Playlist playlistInserted = insertedPlaylist.get(0);
+                int position_id = object.optInt("position_id");
+                int resource_id;
+                int order;
+                int playlist_id = playlistInserted.getPlaylist_id();
+                for (int i = 0; i < playlistResourceItem.length(); i++) {
+                    JSONObject obj = playlistResourceItem.getJSONObject(i);
+                    resource_id = obj.getInt("resource_id");
+                    order = obj.getInt("order");
+                    addPlaylistResource(user_token, resource_id, playlist_id, order, position_id);
+                }
+
             }
-
-
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Playlist successfully Added with " + playlistResourceItem.length() + " resource");
+            response.setMessage("Playlist successfully Added");
 
         } catch (Exception e) {
             response.setStatus("500");
             response.setSuccess(false);
-            response.setMessage(e.getMessage());
+            response.setMessage("Can't create playlist : " + e.getMessage());
         }
 
         return response;
@@ -2687,6 +2836,7 @@ public class CmsServices {
 //                    ",end_date: " + end_date + ",sort: " + sort + ",status: " + status + ",is_default: " + is_default + ",created_by: " + created_by + ",created_date: " + created_date + ",updated_by: " + updated_by + ",updated_date: " + updated_date);
 
             for (int i = 0; i < getResultPlayList.size(); i++) {
+                Playlist playlist = getResultPlayList.get(i);
                 logger.info("playlist count : " + getResultPlayList);
                 Map resultMap = new HashMap();
                 if (getResultPlayList.get(i).getBranch_id() != 0) {
@@ -2698,7 +2848,7 @@ public class CmsServices {
                     branch.setBranch_name("All Branches");
                     resultMap.put("branch", branch);
                 }
-                logger.info("branch ok");
+//                logger.info("branch ok");
                 if (getResultPlayList.get(i).getRegion_id() != 0) {
                     List<Region> regions = regionRepository.getRegionById(getResultPlayList.get(i).getRegion_id());
                     resultMap.put("region", regions.get(0));
@@ -2708,22 +2858,23 @@ public class CmsServices {
                     region.setRegion_name("All Regions");
                     resultMap.put("region", region);
                 }
-                logger.info("region ok");
+//                logger.info("region ok");
                 if (getResultPlayList.get(i).getCompany_id() != 0) {
                     List<Company> companies = companyRepository.getCompanyById(getResultPlayList.get(i).getCompany_id());
                     resultMap.put("company", companies.get(0));
                 } else {
                     resultMap.put("company", "All Companies");
                 }
-                logger.info("company ok");
-                List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
-                logger.info("position ok");
-                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getProfile_id());
-                logger.info("device ok");
+//                logger.info("company ok");
+                List<Profile> profileList = profileRepository.getProfileById(playlist.getProfile_id());
+//                List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
+//                logger.info("position ok");
+//                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getProfile_id());
+//                logger.info("device ok");
 
 
-                resultMap.put("device", devices.get(0));
-                resultMap.put("position", positions.get(0));
+//                resultMap.put("device", devices.get(0));
+                resultMap.put("profile", profileList.get(0));
                 resultMap.put("playlist", getResultPlayList.get(i));
 
                 result.add(resultMap);
@@ -2744,7 +2895,17 @@ public class CmsServices {
 
     public BaseResponse<Playlist> updatePlaylist(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String playlist_name;
+        String start_date;
+        String end_date;
+        String status;
+        int playlist_id;
+        int profile_id;
 
+        int branch_id;
+        int region_id;
+        int company_id;
+        boolean is_default;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2756,17 +2917,45 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            playlist_name = jsonInput.optString("playlist_name");
+            start_date = jsonInput.optString("start_date");
+            end_date = jsonInput.optString("end_date");
+            status = jsonInput.optString("status");
+            playlist_id = jsonInput.optInt("playlist_id");
+            branch_id = jsonInput.optInt("branch_id");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
 
-            //Playlist name  check
-            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByNameExceptId(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("playlist_id"));
-            if (playlistNameCheckResult.size() > 0) {
-                response.setStatus("500");
+
+            List<Profile> profiles = profileRepository.getProfileByPlaylistId(playlist_id);
+            if (profiles.size() != 0) {
+                profile_id = profiles.get(0).getProfile_id();
+            } else {
+                response.setStatus("404");
                 response.setSuccess(false);
-                response.setMessage("Playlist name already exist / used");
+                response.setMessage("Can't update playlist : profile for this playlist not found");
                 return response;
             }
 
-            boolean is_default;
+            int addNewAvailability = playlistRepository.checkAddNewPlaylistAvailability(profile_id, start_date, end_date);
+            if (addNewAvailability == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Can't update playlist : Playlist already exist for that period of time (select another start date /end date)");
+                return response;
+            }
+
+
+            //Playlist name  check
+            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByNameExceptId(playlist_name, branch_id, region_id, company_id, playlist_id);
+            if (playlistNameCheckResult.size() > 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Can't update playlist  : Playlist name already exist / used");
+                return response;
+            }
+
+
             String is_defaultStr = jsonInput.optString("is_default");
             if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
                 response.setStatus("500");
@@ -2777,9 +2966,8 @@ public class CmsServices {
                 is_default = Boolean.valueOf(is_defaultStr);
             }
 
-            playlistRepository.updatePlaylist(jsonInput.optString("playlist_name"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("position_id"),
-                    jsonInput.optString("start_date"), jsonInput.optString("end_date"), jsonInput.optString("status"), is_default,
-                    userOnProcess, jsonInput.optInt("playlist_id"));
+            playlistRepository.updatePlaylist(playlist_name, start_date, end_date, status, is_default,
+                    userOnProcess, playlist_id);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist successfully Updated");
@@ -2839,11 +3027,11 @@ public class CmsServices {
                 return response;
             }
             int profile_id = jsonInput.getInt("profile_id");
-            List<Position> getPositionByDeviceId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
-            for (int i = 0; i < getPositionByDeviceId.size(); i++) {
+            List<Position> getPositionByProfileId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
+            for (int i = 0; i < getPositionByProfileId.size(); i++) {
                 Map resultData = new HashMap();
-                Position position = getPositionByDeviceId.get(i);
-                List<Playlist> playlistList = playlistRepository.getPlaylistByPositionId(position.getPosition_id());
+                Position position = getPositionByProfileId.get(i);
+                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
                 resultData.put("position_id", position.getPosition_id());
                 resultData.put("box", position.getBox());
                 resultData.put("x_position", position.getX_pos());
@@ -2855,7 +3043,7 @@ public class CmsServices {
                 for (int j = 0; j < playlistList.size(); j++) {
                     Map resultPlayListMap = new HashMap();
                     Playlist playlist = playlistList.get(j);
-                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylist_id(playlist.getPlaylist_id());
+                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylistAndPosition(playlist.getPlaylist_id(), position.getPosition_id());
                     resultPlayListMap.put("playlist_id", playlist.getPlaylist_id());
                     resultPlayListMap.put("playlist_name", playlist.getPlaylist_name());
                     resultPlayListMap.put("start_date", playlist.getStart_date());
@@ -2937,7 +3125,7 @@ public class CmsServices {
 //    }
 
     //PLAYLIST-RESOURCE SECTION
-    public BaseResponse<String> addPlaylistResource(String userToken, int resource_id, int playlist_id, int order) throws
+    public BaseResponse<String> addPlaylistResource(String userToken, int resource_id, int playlist_id, int order, int position_id) throws
             Exception {
         BaseResponse response = new BaseResponse();
         try {
@@ -2951,7 +3139,19 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
 
-            playlistResourceRepository.save(playlist_id, resource_id, order, userOnProcess);
+            PlaylistResource playlistResource = new PlaylistResource();
+            playlistResource.setPlaylist_id(playlist_id);
+            playlistResource.setPosition_id(position_id);
+            playlistResource.setOrder(order);
+            playlistResource.setResource_id(resource_id);
+            playlistResource.setStatus("active");
+            playlistResource.setCreated_by(userOnProcess);
+            playlistResource.setCreated_date(new Date());
+            playlistResource.setUpdated_by("");
+            playlistResource.setUpdated_date(new Date());
+            playlistResourceRepository.save(playlistResource);
+
+//            playlistResourceRepository.save(playlist_id, resource_id, order, userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Playlist add resource successfully");
@@ -2969,16 +3169,28 @@ public class CmsServices {
         BaseResponse response = new BaseResponse<>();
         List<Map<String, Object>> result = new ArrayList<>();
         JSONObject jsonInput;
+        int playlist_id;
         try {
             jsonInput = new JSONObject(input);
-            List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylist_id(jsonInput.optInt("playlist_id"));
-
-            for (int i = 0; i < getPlaylistResource.size(); i++) {
+            playlist_id = jsonInput.optInt("playlist_id");
+            List<Playlist> playlistList = playlistRepository.getPlaylistById(playlist_id);
+            List<Position> positionList = positionRepository.getPositionByProfileId(playlistList.get(0).getProfile_id());
+            for (Position position : positionList) {
                 Map resultMap = new HashMap();
-                List<Resource> resources = resourceRepository.getResourceById(getPlaylistResource.get(i).getResource_id());
-                resultMap.put("resources", resources.get(0));
-                resultMap.put("playlist_resource", getPlaylistResource.get(i));
-
+                resultMap.put("position_id", position.getPosition_id());
+                resultMap.put("position_name", position.getBox());
+                List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylistAndPosition(playlist_id, position.getPosition_id());
+                List resource_list = new ArrayList();
+                for (int i = 0; i < getPlaylistResource.size(); i++) {
+                    Map resourceMap = new HashMap();
+                    List<Resource> resources = resourceRepository.getResourceById(getPlaylistResource.get(i).getResource_id());
+                    resourceMap.put("resource_id", resources.get(0).getResource_id());
+                    resourceMap.put("resource_name", resources.get(0).getResource_name());
+                    resourceMap.put("playlist_resource_id", getPlaylistResource.get(i).getPlaylist_resource_id());
+                    resourceMap.put("order", getPlaylistResource.get(i).getOrder());
+                    resource_list.add(resourceMap);
+                }
+                resultMap.put("resource_list", resource_list);
                 result.add(resultMap);
             }
 
@@ -3061,9 +3273,20 @@ public class CmsServices {
     //RUNNING TEXT SECTION
     public BaseResponse<String> addNewRunningText(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String user_token;
+        String running_text;
+        int branch_id;
+        int region_id;
+        int company_id;
+        String start_date;
+        String end_date;
+        String tittle;
+        String description;
+
         try {
             JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            user_token = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(user_token);
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("500");
@@ -3072,23 +3295,48 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            tittle = jsonInput.optString("tittle");
+            description = jsonInput.optString("description");
+            running_text = jsonInput.optString("running_text");
+            branch_id = jsonInput.optInt("branch_id");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
+            start_date = jsonInput.optString("start_date");
+            end_date = jsonInput.optString("end_date");
 
             //RunningText tittle  check
-            List<RunningText> runningTextTittleCheckResult = runningTextRepository.getRunningTextByTittle(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"));
+            List<RunningText> runningTextTittleCheckResult = runningTextRepository.getRunningTextByTittle(tittle, branch_id, region_id, company_id);
             if (runningTextTittleCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("RunningText Tittle already exist / used");
                 return response;
             }
-            if (jsonInput.optInt("company_id") == 0) {
+            if (company_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Unknown company, please choose existing company.");
                 return response;
             }
-            runningTextRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
-                    jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"), userOnProcess);
+
+            //Save running text object
+            RunningText runningText = new RunningText();
+            runningText.setTittle(tittle);
+            runningText.setDescription(description);
+            runningText.setRunning_text(running_text);
+            runningText.setCompany_id(company_id);
+            runningText.setRegion_id(region_id);
+            runningText.setBranch_id(branch_id);
+            runningText.setStatus("active");
+            runningText.setStart_date(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(start_date));
+            runningText.setEnd_date(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(end_date));
+            runningText.setCreated_by(userOnProcess);
+            runningText.setCreated_date(new Date());
+            runningText.setUpdated_by("");
+            runningText.setUpdated_date(new Date());
+            runningTextRepository.save(runningText);
+//            runningTextRepository.save(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), description,
+//                    running_text, start_date, end_date, userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText successfully Added");
@@ -4161,6 +4409,7 @@ public class CmsServices {
 
             for (int i = 0; i < getProfileResult.size(); i++) {
                 Profile profile = getProfileResult.get(i);
+                List<Position> positionList = positionRepository.getPositionByProfileId(profile.getProfile_id());
                 Map resultMap = new HashMap();
                 if (profile.getBranch_id() != 0) {
                     List<Branch> branch = branchRepository.getBranchById(profile.getBranch_id());
@@ -4187,6 +4436,7 @@ public class CmsServices {
                     resultMap.put("company", "All Companies");
                 }
 
+                resultMap.put("positions", positionList);
                 resultMap.put("profile", getProfileResult.get(i));
 
                 result.add(resultMap);
@@ -4342,6 +4592,67 @@ public class CmsServices {
 //    }
 
     //SCHEDULER SECTION
+
+    //CONFIGURATION SECTION
+    public BaseResponse addConfig(String input) throws Exception {
+        BaseResponse<List<Configuration>> result = new BaseResponse<>();
+        JSONObject jsonInput = null;
+        String configuration_name = "";
+        String configuration_value = "";
+        try {
+            jsonInput = new JSONObject(input);
+            configuration_name = jsonInput.optString("configuration_name");
+            configuration_value = jsonInput.optString("configuration_value");
+        } catch (JSONException e) {
+            result.setStatus("0");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+            return result;
+        }
+        if (jsonInput != null && !configuration_name.equals("") && !configuration_value.equals("")) {
+            Configuration configuration = new Configuration();
+            configuration.setConfiguration_name(configuration_name);
+            configuration.setConfiguration_value(configuration_value);
+            configurationRepository.save(configuration);
+            result.setStatus("2000");
+            result.setSuccess(true);
+            result.setMessage("Config added");
+        } else {
+            result.setStatus("0");
+            result.setSuccess(false);
+            result.setMessage("Some field is empty");
+        }
+        return result;
+    }
+
+    public BaseResponse getDbCredential() {
+        BaseResponse response = new BaseResponse();
+        List<Configuration> configurationList = configurationRepository.findAll();
+        String db_config = "";
+        try {
+            for (Configuration configuration : configurationList) {
+                if (configuration.getConfiguration_name().compareToIgnoreCase("db_credential") == 0) {
+                    db_config = configuration.getConfiguration_value();
+                }
+            }
+            if (db_config.isEmpty()) {
+                response.setSuccess(false);
+                response.setMessage("Database credential not found");
+                response.setStatus("404");
+                return response;
+            }
+            String encryptedDBCredential = cmsEncryptDecrypt.encrypt(db_config.getBytes());
+            response.setData(encryptedDBCredential);
+            response.setSuccess(true);
+            response.setMessage("Database credential found");
+            response.setStatus("200");
+        } catch (Exception e) {
+            response.setSuccess(false);
+            response.setMessage("Failed to get database credential : " + e.getMessage());
+            response.setStatus("500");
+        }
+        return response;
+    }
 
     public BaseResponse notFoundComponent(String component) {
         BaseResponse response = new BaseResponse();

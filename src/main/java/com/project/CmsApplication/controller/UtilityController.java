@@ -116,28 +116,17 @@ public class UtilityController {
         return result;
     }
 
+    @GetMapping("/getDbCredential")
+    public BaseResponse<List<Configuration>> getDbCredential() {
+        logger.info("Get database credential");
+        return cmsServices.getDbCredential();
+    }
+
     @PostMapping("/addConfig")
-    public BaseResponse<List<Configuration>> addConfig(@RequestBody String input) {
-        BaseResponse<List<Configuration>> result = new BaseResponse<>();
-        JSONObject jsonInput = null;
-        try {
-            jsonInput = new JSONObject(input);
-        } catch (JSONException e) {
-            result.setStatus("0");
-            result.setSuccess(false);
-            result.setMessage(e.getMessage());
-        }
-        if (jsonInput != null && !jsonInput.optString("configuration_name").equals("") && !jsonInput.optString("configuration_value").equals("")) {
-            configurationRepository.save(jsonInput.optString("configuration_name"), jsonInput.optString("configuration_value"));
-            result.setStatus("2000");
-            result.setSuccess(true);
-            result.setMessage("Config added");
-        } else {
-            result.setStatus("0");
-            result.setSuccess(false);
-            result.setMessage("Some field is empty");
-        }
-        return result;
+    public BaseResponse<List<Configuration>> addConfig(@RequestBody String input) throws Exception {
+        logger.info("Add new configuration");
+
+        return cmsServices.addConfig(input);
     }
 
     @PostMapping("/updateConfig")

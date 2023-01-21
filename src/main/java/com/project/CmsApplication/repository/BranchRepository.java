@@ -36,11 +36,11 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
                                @Param("updated_by") String updated_by,
                                @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Branch(status,region_id,company_id,branch_name,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:region_id,:company_id,:branch_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("region_id") int region_id, @Param("company_id") int company_id, @Param("branch_name") String branch_name,
-              @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Branch(status,region_id,company_id,branch_name,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES('active',:region_id,:company_id,:branch_name,:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("region_id") int region_id, @Param("company_id") int company_id, @Param("branch_name") String branch_name,
+//              @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.Branch WHERE branch_id =:branch_id", nativeQuery = true)
     List<Branch> getBranchById(@Param("branch_id") int branch_id);

@@ -37,7 +37,7 @@ public interface ProfileRepository extends JpaRepository<Profile, Integer> {
             @Param("updated_date") String updated_at);
 
 
-    @Query(value = "SELECT * from cms_2.Profile WHERE profile_id =:profile_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Profile WHERE profile_id =:profile_id and status <> 'deleted'", nativeQuery = true)
     List<Profile> getProfileById(@Param("profile_id") int profile_id);
 
     @Query(value = "SELECT * from cms_2.Profile WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
@@ -62,8 +62,8 @@ public interface ProfileRepository extends JpaRepository<Profile, Integer> {
             "updated_date=current_timestamp WHERE profile_id=:profile_id", nativeQuery = true)
     void deleteProfile(@Param("profile_id") int profile_id, @Param("updated_by") String updated_by);
 
-    @Query(value = "SELECT * from cms_2.Profile WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
-    List<Profile> getExpiredProfileId();
+    @Query(value = "SELECT * from cms_2.Profile WHERE profile_id=:profile_id and status <> 'deleted' ", nativeQuery = true)
+    List<Profile> getProfileByPlaylistId(@Param("profile_id") int profile_id);
 
 
 }

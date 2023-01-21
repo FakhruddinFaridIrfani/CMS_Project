@@ -49,14 +49,14 @@ public interface RunningTextRepository extends JpaRepository<RunningText, Intege
                                       @Param("region_id") String region_id,
                                       @Param("company_id") String company_id);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.running_text(status,branch_id,region_id,company_id,tittle,description,running_text,start_date,end_date,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:branch_id,:region_id,:company_id,:tittle,:description,:running_text,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id,
-              @Param("tittle") String tittle,
-              @Param("description") String description, @Param("running_text") String running_text,
-              @Param("start_date") String start_date, @Param("end_date") String end_date,
-              @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.running_text(status,branch_id,region_id,company_id,tittle,description,running_text,start_date,end_date,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES('active',:branch_id,:region_id,:company_id,:tittle,:description,:running_text,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id,
+//              @Param("tittle") String tittle,
+//              @Param("description") String description, @Param("running_text") String running_text,
+//              @Param("start_date") String start_date, @Param("end_date") String end_date,
+//              @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.running_text WHERE running_text_id =:running_text_id", nativeQuery = true)
     List<RunningText> getRunningTextById(@Param("running_text_id") int running_text_id);

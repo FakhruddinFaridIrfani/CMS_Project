@@ -25,6 +25,10 @@ public class PlaylistResource {
     private int playlist_id;
 
     @NotNull
+    @Column(name = "position_id")
+    private int position_id;
+
+    @NotNull
     @Column(name = "resource_id")
     private int resource_id;
 
@@ -123,5 +127,13 @@ public class PlaylistResource {
 
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
+    }
+
+    public int getPosition_id() {
+        return position_id;
+    }
+
+    public void setPosition_id(int position_id) {
+        this.position_id = position_id;
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -37,14 +38,14 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
                                    @Param("created_by") String created_by, @Param("created_date") String created_date,
                                    @Param("updated_by") String updated_by, @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",is_default,created_by,created_date,updated_by,updated_date) " +
-            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:is_default,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
-    void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
-              @Param("region_id") int region_id, @Param("company_id") int company_id,
-              @Param("position_id") int position_id,
-              @Param("start_date") String start_date, @Param("end_date") String end_date,
-              @Param("sort") int sort, @Param("is_default") boolean is_default, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Playlist(status,playlist_name,branch_id,region_id,company_id,position_id,start_date,end_date,\"sort\",is_default,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES('active',:playlist_name,:branch_id,:region_id,:company_id,:position_id,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:sort,:is_default,:created_by,current_timestamp,:created_by,current_timestamp) ", nativeQuery = true)
+//    void save(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
+//              @Param("region_id") int region_id, @Param("company_id") int company_id,
+//              @Param("position_id") int position_id,
+//              @Param("start_date") String start_date, @Param("end_date") String end_date,
+//              @Param("sort") int sort, @Param("is_default") boolean is_default, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.Playlist WHERE playlist_id =:playlist_id", nativeQuery = true)
     List<Playlist> getPlaylistById(@Param("playlist_id") int playlist_id);
@@ -65,12 +66,10 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
                                              @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("playlist_id") int playlist_id);
 
     @Modifying
-    @Query(value = "UPDATE cms_2.Playlist SET playlist_name=:playlist_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,position_id=:position_id," +
+    @Query(value = "UPDATE cms_2.Playlist SET playlist_name=:playlist_name," +
             "start_date = CAST(:start_date AS timestamp),end_date=CAST(:end_date AS timestamp),status=:status,is_default=:is_default," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE playlist_id =:playlist_id ", nativeQuery = true)
-    void updatePlaylist(@Param("playlist_name") String playlist_name, @Param("branch_id") int branch_id,
-                        @Param("region_id") int region_id, @Param("company_id") int company_id,
-                        @Param("position_id") int position_id,
+    void updatePlaylist(@Param("playlist_name") String playlist_name,
                         @Param("start_date") String start_date, @Param("end_date") String end_date,
                         @Param("status") String status, @Param("is_default") boolean is_default,
                         @Param("updated_by") String updated_by, @Param("playlist_id") int playlist_id);
@@ -93,8 +92,19 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
     @Query(value = "SELECT * from cms_2.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
     List<Playlist> getExpiredPlaylist();
 
-    @Query(value = "SELECT * from cms_2.playlist where position_id = :position_id AND status <> 'deleted' AND status <> 'inactive'", nativeQuery = true)
-    List<Playlist> getPlaylistByPositionId(@Param("position_id") int position_id);
+    @Query(value = "SELECT * from cms_2.playlist where profile_id = :profile_id AND status <> 'deleted' AND status <> 'inactive' ORDER BY start_date DESC  limit 1", nativeQuery = true)
+    List<Playlist> getPlaylistByProfileId(@Param("profile_id") int profile_id);
+
+    @Query(value = "SELECT " +
+            "    CASE " +
+            "        when CAST(:start_date_input AS DATE) between CAST(start_date AS DATE) and CAST(end_date AS DATE) then 0 " +
+            "        when CAST(:end_date_input AS DATE) between CAST(start_date AS DATE) and CAST(end_date AS DATE) then 0 " +
+            "        when CAST(start_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE) then 0 " +
+            "        when CAST(end_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE) then 0 " +
+            "        else 1 " +
+            "        END AS availability " +
+            "  FROM public.testing where profile_id = :profile_id status ='active'", nativeQuery = true)
+    int checkAddNewPlaylistAvailability(@Param("profile_id") int profile_id, @Param("start_date_input") String start_date_input, @Param("end_date_input") String end_date_input);
 
 
 }

@@ -29,10 +29,10 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
                            @Param("updated_by") String updated_by,
                            @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms_2.Role(role_name,status,created_by,created_date,updated_by,updated_date) " +
-            "VALUES(:role_name,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("role_name") String role_name, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Role(role_name,status,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES(:role_name,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("role_name") String role_name, @Param("created_by") String created_by);
 
     @Query(value = "SELECT * from cms_2.Role WHERE role_id =:role_id", nativeQuery = true)
     List<Role> getRoleById(@Param("role_id") int role_id);
