@@ -17,9 +17,7 @@ public interface BranchRepository extends JpaRepository<Branch, Integer> {
 
     @Query(value = "SELECT * from cms_2.Branch WHERE " +
             "lower(branch_name) like lower(:branch_name) AND " +
-            "CAST(branch_id AS VARCHAR) like :branch_id AND " +
-            "CAST(region_id AS VARCHAR) like :region_id AND " +
-            "CAST(company_id AS VARCHAR) like :company_id AND " +
+            "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
             "lower(created_by) like lower(:created_by) AND " +

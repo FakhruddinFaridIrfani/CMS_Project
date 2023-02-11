@@ -16,6 +16,7 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
 
     @Query(value = "SELECT * from cms_2.Resource WHERE " +
             "lower(resource_name) like lower(:resource_name) AND " +
+            "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
             "lower(\"type\") like lower(:type) AND " +
             "thumbnail like :thumbnail AND " +
             "\"file\" like :file AND " +
@@ -27,7 +28,10 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
             "CAST(created_date AS VARCHAR) like :created_date AND " +
             "lower(updated_by) like lower(:updated_by) AND " +
             "CAST(updated_date AS VARCHAR) like :updated_date ORDER BY created_date DESC", nativeQuery = true)
-    List<Resource> getResourceList(@Param("resource_name") String resource_name, @Param("type") String type,
+    List<Resource> getResourceList(@Param("branch_id") String branch_id,
+                                   @Param("region_id") String region_id,
+                                   @Param("company_id") String company_id,
+                                   @Param("resource_name") String resource_name, @Param("type") String type,
                                    @Param("thumbnail") String thumbnail, @Param("file") String file,
                                    @Param("duration") String duration, @Param("stretch") String stretch,
                                    @Param("status") String status,

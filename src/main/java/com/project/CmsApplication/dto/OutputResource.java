@@ -1,86 +1,26 @@
-package com.project.CmsApplication.model;
+package com.project.CmsApplication.dto;
 
+import lombok.Data;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import org.springframework.format.annotation.DateTimeFormat;
-
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.util.Date;
 
-@Entity
-@Table(name = "Resource", schema = "cms_2")
-public class Resource {
-    @Id
-    @Column(name = "resource_id", columnDefinition = "serial")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+@Data
+public class OutputResource {
     private int resource_id;
-
-    @NotNull
-    @Column(name = "resource_name")
     private String resource_name;
-
-    @NotNull
-    @Column(name = "branch_id")
     private int branch_id;
-
-    @NotNull
-    @Column(name = "region_id")
     private int region_id;
-    @NotNull
-    @Column(name = "company_id")
     private int company_id;
-
-
-    @NotNull
-    @Column(name = "type")
     private String type;
-
-
-    @NotNull
-    @Column(name = "thumbnail")
     private String thumbnail;
-
-
-    @NotNull
-    @Column(name = "file")
     private String file;
-
-    @NotNull
-    @Column(name = "duration")
     private int duration;
-
-    @NotNull
-    @Column(name = "status")
     private String status;
-
-    @NotNull
-    @Column(name = "stretch")
     private String stretch;
-
-
-    @Column(name = "url_resource")
     private String url_resource;
-
-
-    @NotNull
-    @Column(name = "created_by")
     private String created_by;
-
-
-    @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
-    @Column(name = "created_date")
     private Date created_date;
-
-
-    @Column(name = "updated_by")
     private String updated_by;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
-    @Column(name = "updated_date")
     private Date updated_date;
 
     public int getResource_id() {
@@ -97,6 +37,30 @@ public class Resource {
 
     public void setResource_name(String resource_name) {
         this.resource_name = resource_name;
+    }
+
+    public int getBranch_id() {
+        return branch_id;
+    }
+
+    public void setBranch_id(int branch_id) {
+        this.branch_id = branch_id;
+    }
+
+    public int getRegion_id() {
+        return region_id;
+    }
+
+    public void setRegion_id(int region_id) {
+        this.region_id = region_id;
+    }
+
+    public int getCompany_id() {
+        return company_id;
+    }
+
+    public void setCompany_id(int company_id) {
+        this.company_id = company_id;
     }
 
     public String getType() {
@@ -147,6 +111,13 @@ public class Resource {
         this.stretch = stretch;
     }
 
+    public String getUrl_resource() {
+        return url_resource;
+    }
+
+    public void setUrl_resource(String url_resource) {
+        this.url_resource = url_resource;
+    }
 
     public String getCreated_by() {
         return created_by;
@@ -179,37 +150,4 @@ public class Resource {
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
     }
-
-    public String getUrl_resource() {
-        return url_resource;
-    }
-
-    public void setUrl_resource(String url_resource) {
-        this.url_resource = url_resource;
-    }
-
-    public int getBranch_id() {
-        return branch_id;
-    }
-
-    public void setBranch_id(int branch_id) {
-        this.branch_id = branch_id;
-    }
-
-    public int getRegion_id() {
-        return region_id;
-    }
-
-    public void setRegion_id(int region_id) {
-        this.region_id = region_id;
-    }
-
-    public int getCompany_id() {
-        return company_id;
-    }
-
-    public void setCompany_id(int company_id) {
-        this.company_id = company_id;
-    }
-
 }

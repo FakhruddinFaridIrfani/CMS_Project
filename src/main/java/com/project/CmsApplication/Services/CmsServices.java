@@ -2,6 +2,7 @@ package com.project.CmsApplication.Services;
 
 import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
+import com.project.CmsApplication.dto.OutputResource;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
@@ -171,6 +172,7 @@ public class CmsServices {
             response.setMessage("Role successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -206,7 +208,7 @@ public class CmsServices {
                 updated_date = "%" + dateFormatter.formatDate(jsonInput.optString("updated_date")) + "%";
             }
             role_name = "%" + jsonInput.optString("role_name") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -219,6 +221,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Role Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -248,12 +251,13 @@ public class CmsServices {
                 response.setMessage("Role name already exist / used");
                 return response;
             }
-            roleRepository.updateRole(jsonInput.optString("role_name"), jsonInput.optString("status"),
+            roleRepository.updateRole(jsonInput.optString("role_name"), jsonInput.optString("status").toLowerCase(),
                     userOnProcess, jsonInput.optInt("role_id"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Role successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -288,6 +292,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Role successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -340,6 +345,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Privilege Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("0");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -371,6 +377,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Previlege successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -434,6 +441,7 @@ public class CmsServices {
             response.setMessage("User successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -477,7 +485,7 @@ public class CmsServices {
             user_name = "%" + jsonInput.optString("user_name") + "%";
             user_email = "%" + jsonInput.optString("user_email") + "%";
             user_full_name = "%" + jsonInput.optString("user_full_name") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -518,6 +526,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("User Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -554,7 +563,7 @@ public class CmsServices {
             }
 
             usersRepository.updateUser(jsonInput.optString("user_email"),
-                    jsonInput.optString("status"), jsonInput.optString("user_full_name"),
+                    jsonInput.optString("status").toLowerCase(), jsonInput.optString("user_full_name"),
                     userOnProcess, jsonInput.optInt("branch_id"),
                     jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("role_id"), jsonInput.optInt("user_id"));
             response.setStatus("200");
@@ -563,6 +572,7 @@ public class CmsServices {
 
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -591,6 +601,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("User successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -646,6 +657,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Login Success !!");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -672,6 +684,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Password Changed !!");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -700,7 +713,7 @@ public class CmsServices {
 //            response.setSuccess(true);
 //            response.setMessage("User Role successfully created");
 //
-//        } catch (Exception e) {
+//        } catch (Exception e) { logger.info("Failed : "+e.getMessage())
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
@@ -736,7 +749,7 @@ public class CmsServices {
 //            if (role_id.isEmpty() || role_id.compareToIgnoreCase("null") == 0 || role_id.compareToIgnoreCase("0") == 0) {
 //                role_id = "%%";
 //            }
-//            status = jsonInput.optString("status");
+//            status = jsonInput.optString("status").toLowerCase();
 //            if (status.isEmpty()) {
 //                status = "%%";
 //            }
@@ -757,7 +770,7 @@ public class CmsServices {
 //            response.setStatus("200");
 //            response.setSuccess(true);
 //            response.setMessage("User Role Listed");
-//        } catch (Exception e) {
+//        } catch (Exception e) { logger.info("Failed : "+e.getMessage())
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
@@ -779,13 +792,13 @@ public class CmsServices {
 //                return response;
 //            }
 //            String userOnProcess = auth.get("user_name").toString();
-//            userRoleRepository.updateUserRole(jsonInput.optInt("role_id"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("user_role_id"));
+//            userRoleRepository.updateUserRole(jsonInput.optInt("role_id"), jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("user_role_id"));
 //            response.setStatus("200");
 //            response.setSuccess(true);
 //            response.setMessage("User Role successfully Updated");
 //
 //
-//        } catch (Exception e) {
+//        } catch (Exception e) { logger.info("Failed : "+e.getMessage())
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
@@ -813,7 +826,7 @@ public class CmsServices {
 //            response.setStatus("200");
 //            response.setSuccess(true);
 //            response.setMessage("User-Role successfully deleted");
-//        } catch (Exception e) {
+//        } catch (Exception e) { logger.info("Failed : "+e.getMessage())
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
@@ -837,6 +850,7 @@ public class CmsServices {
         String company_address;
         String company_phone;
         String company_email;
+        String status;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -852,6 +866,7 @@ public class CmsServices {
             company_address = jsonInput.optString("company_address");
             company_phone = jsonInput.optString("company_phone");
             company_email = jsonInput.optString("company_email");
+            status = jsonInput.optString("status").toLowerCase();
             //company name  check
             if (company_name.isEmpty()) {
                 response.setStatus("500");
@@ -875,6 +890,11 @@ public class CmsServices {
             companies.setCompany_address(company_address);
             companies.setCompany_phone(company_phone);
             companies.setCompany_email(company_email);
+            companies.setStatus(status);
+            companies.setCreated_by(userOnProcess);
+            companies.setCreated_date(new Date());
+            companies.setUpdated_by("");
+            companies.setUpdated_date(new Date());
             companyRepository.save(companies);
 
 
@@ -883,6 +903,7 @@ public class CmsServices {
             response.setMessage("Company successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -924,7 +945,7 @@ public class CmsServices {
             company_address = "%" + jsonInput.optString("company_address") + "%";
             company_email = "%" + jsonInput.optString("company_email") + "%";
             company_phone = "%" + jsonInput.optString("company_phone") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -942,6 +963,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Company Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -972,11 +994,12 @@ public class CmsServices {
                 return response;
             }
             companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phone"),
-                    jsonInput.optString("company_email"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("company_id"));
+                    jsonInput.optString("company_email"), jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("company_id"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Company successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1015,6 +1038,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("User successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1089,6 +1113,7 @@ public class CmsServices {
             response.setMessage("Region successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create Region : " + e.getMessage());
@@ -1134,7 +1159,7 @@ public class CmsServices {
             if (region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
                 region_id = "%%";
             }
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -1145,6 +1170,7 @@ public class CmsServices {
             for (int i = 0; i < getRegionResult.size(); i++) {
                 Map resultMap = new HashMap();
                 List<Company> company = getCompanyById(getRegionResult.get(i).getCompany_id());
+                if (company.size() == 0) continue;
                 resultMap.put("region", getRegionResult.get(i));
                 resultMap.put("company_name", company.get(0).getCompany_name());
                 resultMap.put("company_id", company.get(0).getCompany_id());
@@ -1158,6 +1184,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Region Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1187,18 +1214,19 @@ public class CmsServices {
                 response.setMessage("Region name already exist / used");
                 return response;
             }
-            if (jsonInput.optString("status").isEmpty()) {
+            if (jsonInput.optString("status").toLowerCase().isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Status must be filled, can't be empty");
                 return response;
             }
-            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status"),
+            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status").toLowerCase(),
                     userOnProcess, jsonInput.optInt("region_id"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Region successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1236,6 +1264,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Region successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1274,7 +1303,7 @@ public class CmsServices {
             String userOnProcess = auth.get("user_name").toString();
             branch_name = jsonInput.optString("branch_name");
             region_id = jsonInput.optInt("region_id");
-            company_id = jsonInput.optInt("company_id");
+//            company_id = jsonInput.optInt("company_id");
 
             //Branch name  check
             if (branch_name.isEmpty()) {
@@ -1295,6 +1324,16 @@ public class CmsServices {
                 response.setMessage("Region can't be empty");
                 return response;
             }
+
+            List<Region> regions = regionRepository.getRegionById(region_id);
+            if (regions.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Region can't be found");
+                return response;
+            }
+
+            company_id = regions.get(0).getCompany_id();
 
             List<Branch> branchNameCheckResult = branchRepository.getBranchByName(branch_name, region_id, company_id);
             if (branchNameCheckResult.size() > 0) {
@@ -1319,6 +1358,7 @@ public class CmsServices {
             response.setMessage("Branch successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1369,7 +1409,7 @@ public class CmsServices {
             if (company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
                 company_id = "%%";
             }
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -1380,7 +1420,9 @@ public class CmsServices {
             for (int i = 0; i < getBranchResult.size(); i++) {
                 Map resultMap = new HashMap();
                 List<Region> region = getRegionById(getBranchResult.get(i).getRegion_id());
+                if (region.size() == 0) continue;
                 List<Company> company = getCompanyById(region.get(0).getCompany_id());
+                if (company.size() == 0) continue;
                 resultMap.put("company_name", company.get(0).getCompany_name());
                 resultMap.put("company_id", company.get(0).getCompany_id());
                 resultMap.put("branch", getBranchResult.get(i));
@@ -1396,6 +1438,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Branch Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1428,11 +1471,12 @@ public class CmsServices {
             }
 
             branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"),
-                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("branch_id"));
+                    jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("branch_id"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Branch successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1481,6 +1525,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Branch successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1548,6 +1593,7 @@ public class CmsServices {
             response.setMessage("Promo successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create branch : " + e.getMessage());
@@ -1611,7 +1657,7 @@ public class CmsServices {
             start_date = "%" + jsonInput.optString("start_date") + "%";
             end_date = "%" + jsonInput.optString("end_date") + "%";
 
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -1658,6 +1704,7 @@ public class CmsServices {
                     try {
                         promo.setThumbnail(getFile(promo.getThumbnail(), "promo").getData().get("file_base64").toString());
                     } catch (Exception e) {
+                        logger.info("Failed : " + e.getMessage());
                         logger.info("promo error : " + e.getMessage());
                         promo.setThumbnail("");
                     }
@@ -1670,6 +1717,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Promo Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1715,11 +1763,12 @@ public class CmsServices {
             }
             promoRepository.updatePromo(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), file, jsonInput.optString("description"),
                     jsonInput.optString("popup"), jsonInput.optString("popup_description"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
-                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("promo_id"), thumbnail);
+                    jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("promo_id"), thumbnail);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Promo successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1748,6 +1797,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Promo successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1824,6 +1874,7 @@ public class CmsServices {
             response.setMessage("Device successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1874,7 +1925,7 @@ public class CmsServices {
                 company_id = "%%";
             }
             device_name = "%" + jsonInput.optString("device_name") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -1890,6 +1941,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1914,7 +1966,7 @@ public class CmsServices {
             }
             String userOnProcess = auth.get("user_name").toString();
             device_name = jsonInput.optString("device_name");
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             device_id = jsonInput.optInt("device_id");
             //Device name  check
             List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(device_name, device_id);
@@ -1930,7 +1982,7 @@ public class CmsServices {
                 response.setMessage("Can't update device name to empty");
                 return response;
             }
-            if (jsonInput.optString("status").isEmpty()) {
+            if (jsonInput.optString("status").toLowerCase().isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Status must be filled, can't be empty");
@@ -1941,6 +1993,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1971,6 +2024,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1997,6 +2051,7 @@ public class CmsServices {
             }
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2034,6 +2089,7 @@ public class CmsServices {
             response.setMessage("Device successfully registered");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed to check license key :" + e.getMessage());
@@ -2107,6 +2163,7 @@ public class CmsServices {
             response.setMessage("Position successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2152,7 +2209,7 @@ public class CmsServices {
             if (profile_id.isEmpty() || profile_id.compareToIgnoreCase("null") == 0 || profile_id.compareToIgnoreCase("0") == 0) {
                 profile_id = "%%";
             }
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -2165,7 +2222,25 @@ public class CmsServices {
 
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Position> getPositionResult = positionRepository.getPositionList(profile_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date);
+
+            String company_id;
+            String region_id;
+            String branch_id;
+            branch_id = auth.get("branch_id").toString();
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = auth.get("region_id").toString();
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = auth.get("company_id").toString();
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+
+            List<Integer> profile_id_list = profileRepository.getProfileIdListForUserLogin(branch_id, region_id, company_id);
+            List<Position> getPositionResult = positionRepository.getPositionList(profile_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date, profile_id_list);
 
             for (int i = 0; i < getPositionResult.size(); i++) {
                 Map resultMap = new HashMap();
@@ -2183,6 +2258,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Position Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2217,7 +2293,7 @@ public class CmsServices {
             width = jsonInput.optString("width");
             height = jsonInput.optString("height");
             measurement = jsonInput.optString("measurement");
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             position_id = jsonInput.getInt("position_id");
 
             List<Position> positionList = getPositionById(position_id);
@@ -2233,6 +2309,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Position successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2280,6 +2357,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Position successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2297,6 +2375,9 @@ public class CmsServices {
     //RESOURCE SECTION
     public BaseResponse<String> addNewResource(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        int company_id;
+        int region_id;
+        int branch_id;
         String resource_name;
         String type;
         String file_name;
@@ -2314,6 +2395,9 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            company_id = jsonInput.getInt("company_id");
+            region_id = jsonInput.getInt("region_id");
+            branch_id = jsonInput.getInt("branch_id");
             resource_name = jsonInput.optString("resource_name");
             type = jsonInput.optString("type");
             file_name = jsonInput.optString("file_name");
@@ -2373,6 +2457,9 @@ public class CmsServices {
             }
             Resource resources = new Resource();
             resources.setResource_name(resource_name);
+            resources.setCompany_id(company_id);
+            resources.setRegion_id(region_id);
+            resources.setBranch_id(branch_id);
             resources.setType(type);
             resources.setThumbnail(thumbnail);
             resources.setFile(file);
@@ -2392,6 +2479,7 @@ public class CmsServices {
             response.setMessage("Resource successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2403,6 +2491,7 @@ public class CmsServices {
     public BaseResponse getResourceList(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse<>();
         Map<String, Object> result = new HashMap<>();
+        List dataList = new ArrayList();
         JSONObject jsonInput;
         String created_date = "%%";
         String updated_date = "%%";
@@ -2415,6 +2504,9 @@ public class CmsServices {
         String status;
         String created_by;
         String updated_by;
+        String branch_id;
+        String region_id;
+        String company_id;
         int limit = 0;
         int offset = 0;
         int startingData = 0;
@@ -2444,32 +2536,107 @@ public class CmsServices {
                 duration = "%%";
             }
             stretch = "%" + jsonInput.optString("stretch") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             limit = jsonInput.getInt("limit");
             offset = jsonInput.getInt("offset");
             startingData = (offset - 1) * limit;
-            List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
+            List<Resource> getResourceResult = resourceRepository.getResourceList(branch_id, region_id, company_id, resource_name, type, thumbnail, file, duration,
                     stretch, status, created_by, created_date, updated_by, updated_date);
             int maxPage = (int) Math.ceil(getResourceResult.size() / (limit * 1.0));
             if (getResourceResult.size() > 0) {
                 resourceListPaged = getResourceResult.subList(startingData, Math.min((startingData + limit), getResourceResult.size()));
             }
 
-            for (Resource resource : resourceListPaged) {
+//            for (Resource resource : resourceListPaged) {
+//                if (!resource.getThumbnail().isEmpty()) {
+//                    try {
+//                        resource.setThumbnail(getFile(resource.getThumbnail(), "resource").getData().get("file_base64").toString());
+//                    } catch (Exception e) {
+//                        logger.info("Failed : " + e.getMessage());
+//                        resource.setThumbnail("");
+//                    }
+//                }
+//            }
+            List<OutputResource> outputResources = new ArrayList<>();
+            for (Resource inputResource : resourceListPaged) {
+                OutputResource outputResource = new OutputResource();
+                outputResource.setCompany_id(inputResource.getCompany_id());
+                outputResource.setRegion_id(inputResource.getRegion_id());
+                outputResource.setBranch_id(inputResource.getBranch_id());
+                outputResource.setResource_id(inputResource.getResource_id());
+                outputResource.setResource_name(inputResource.getResource_name());
+                outputResource.setType(inputResource.getType());
+                outputResource.setThumbnail(inputResource.getThumbnail());
+                outputResource.setDuration(inputResource.getDuration());
+                outputResource.setStatus(inputResource.getStatus());
+                outputResource.setFile(inputResource.getFile());
+                outputResource.setStretch(inputResource.getStretch());
+                outputResource.setUrl_resource(inputResource.getUrl_resource());
+                outputResource.setCreated_by(inputResource.getCreated_by());
+                outputResource.setCreated_date(inputResource.getCreated_date());
+                outputResource.setUpdated_by(inputResource.getUpdated_by());
+                outputResource.setUpdated_date(inputResource.getUpdated_date());
+                outputResources.add(outputResource);
+            }
+
+
+            for (int i = 0; i < outputResources.size(); i++) {
+                OutputResource resource = outputResources.get(i);
+                Map resultMap = new HashMap();
+                if (resource.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(resource.getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (resource.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(resource.getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (resource.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(resource.getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
                 if (!resource.getThumbnail().isEmpty()) {
                     try {
                         resource.setThumbnail(getFile(resource.getThumbnail(), "resource").getData().get("file_base64").toString());
                     } catch (Exception e) {
+                        logger.info("Failed : " + e.getMessage());
                         resource.setThumbnail("");
                     }
                 }
+
+                resultMap.put("resource", resource);
+                dataList.add(resultMap);
             }
-            result.put("resourceData", resourceListPaged);
+            result.put("resourceData", dataList);
             result.put("maxPage", maxPage);
 
             response.setData(result);
@@ -2477,6 +2644,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Resource Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2498,6 +2666,9 @@ public class CmsServices {
         String status;
         String created_by;
         String updated_by;
+        String branch_id;
+        String region_id;
+        String company_id;
         try {
             jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2523,13 +2694,25 @@ public class CmsServices {
                 duration = "%%";
             }
             stretch = "%" + jsonInput.optString("stretch") + "%";
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Resource> getResourceResult = resourceRepository.getResourceList(resource_name, type, thumbnail, file, duration,
+            List<Resource> getResourceResult = resourceRepository.getResourceList(branch_id, region_id, company_id, resource_name, type, thumbnail, file, duration,
                     stretch, status, created_by, created_date, updated_by, updated_date);
 
             for (Resource resource : getResourceResult) {
@@ -2541,6 +2724,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Resource Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2578,11 +2762,12 @@ public class CmsServices {
                 thumbnail = fileAddResult.get("thumbnail");
             }
             resourceRepository.updateResource(jsonInput.optString("resource_name"), jsonInput.optString("type"), thumbnail, file,
-                    jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optString("status"), userOnProcess, jsonInput.optInt("resource_id"), jsonInput.optString("url_resource"));
+                    jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("resource_id"), jsonInput.optString("url_resource"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Resource successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2621,6 +2806,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Resource successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2673,8 +2859,17 @@ public class CmsServices {
             start_date = jsonInput.optString("start_date");
             end_date = jsonInput.optString("end_date");
 
-            int addNewAvailability = playlistRepository.checkAddNewPlaylistAvailability(profile_id, start_date, end_date);
-            if (addNewAvailability == 0) {
+
+            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(playlist_name, branch_id, region_id, company_id);
+            if (playlistNameCheckResult.size() > 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Can't create playlist : Playlist name already exist / used");
+                return response;
+            }
+
+            List<Playlist> checkAddNewPlaylistAvailability = playlistRepository.checkDateForPlaylist(profile_id, start_date, end_date, 0);
+            if (checkAddNewPlaylistAvailability.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Can't create playlist : Playlist already exist for that period of time (select another start date /end date)");
@@ -2686,13 +2881,7 @@ public class CmsServices {
 
 
             //Playlist name  check
-            List<Playlist> playlistNameCheckResult = playlistRepository.getPlaylistByName(playlist_name, branch_id, region_id, company_id);
-            if (playlistNameCheckResult.size() > 0) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("Can't create playlist : Playlist name already exist / used");
-                return response;
-            }
+
 
             int currentSort = 1;
 //            List<Playlist> latestSort = playlistRepository.getSortOrder(position_id, branch_id);
@@ -2709,14 +2898,25 @@ public class CmsServices {
             } else {
                 is_default = Boolean.valueOf(is_defaultStr);
             }
+
+            if (is_default == true) {
+                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id);
+                if (playlistListCheckDefaultList.size() > 0) {
+                    response.setStatus("500");
+                    response.setSuccess(false);
+                    response.setMessage("Can't create playlist : default playlist already exist for this profile");
+                    return response;
+                }
+            }
+
             Playlist playlist = new Playlist();
             playlist.setCompany_id(company_id);
             playlist.setRegion_id(region_id);
             playlist.setBranch_id(branch_id);
             playlist.setPlaylist_name(playlist_name);
             playlist.setProfile_id(profile_id);
-            playlist.setStart_date(new SimpleDateFormat("yyyy-MM-dd HHmm:ss").parse(start_date));
-            playlist.setEnd_date(new SimpleDateFormat("yyyy-MM-dd HHmm:ss").parse(end_date));
+            playlist.setStart_date(new SimpleDateFormat("yyyy-MM-dd").parse(start_date));
+            playlist.setEnd_date(new SimpleDateFormat("yyyy-MM-dd").parse(end_date));
             playlist.setSort(currentSort);
             playlist.setStatus("active");
             playlist.setIs_default(is_default);
@@ -2753,6 +2953,7 @@ public class CmsServices {
             response.setMessage("Playlist successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Can't create playlist : " + e.getMessage());
@@ -2771,7 +2972,7 @@ public class CmsServices {
         String branch_id;
         String region_id;
         String company_id;
-        String position_id;
+        String profile_id;
         String is_default;
 
         String start_date;
@@ -2809,9 +3010,9 @@ public class CmsServices {
             if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
                 company_id = "%%";
             }
-            position_id = jsonInput.optInt("position_id") + "";
-            if (position_id.isEmpty() || position_id.compareToIgnoreCase("null") == 0 || position_id.compareToIgnoreCase("0") == 0) {
-                position_id = "%%";
+            profile_id = jsonInput.optInt("profile_id") + "";
+            if (profile_id.isEmpty() || profile_id.compareToIgnoreCase("null") == 0 || profile_id.compareToIgnoreCase("0") == 0) {
+                profile_id = "%%";
             }
 
             start_date = "%" + jsonInput.optString("start_date") + "%";
@@ -2824,13 +3025,13 @@ public class CmsServices {
             if (sort.isEmpty() || sort.compareToIgnoreCase("null") == 0 || sort.compareToIgnoreCase("0") == 0) {
                 sort = "%%";
             }
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
-            List<Playlist> getResultPlayList = playlistRepository.getPlaylistList(playlist_name, branch_id, region_id, company_id, position_id, start_date,
+            List<Playlist> getResultPlayList = playlistRepository.getPlaylistList(playlist_name, branch_id, region_id, company_id, profile_id, start_date,
                     end_date, sort, status, is_default, created_by, created_date, updated_by, updated_date);
 //            logger.info("playlist_name: " + playlist_name + ",branch_id: " + branch_id + ",region_id: " + region_id + ",company_id:" + company_id + ",position_id: " + position_id + ",start_date: " + start_date +
 //                    ",end_date: " + end_date + ",sort: " + sort + ",status: " + status + ",is_default: " + is_default + ",created_by: " + created_by + ",created_date: " + created_date + ",updated_by: " + updated_by + ",updated_date: " + updated_date);
@@ -2886,6 +3087,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Playlist Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2920,14 +3122,16 @@ public class CmsServices {
             playlist_name = jsonInput.optString("playlist_name");
             start_date = jsonInput.optString("start_date");
             end_date = jsonInput.optString("end_date");
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             playlist_id = jsonInput.optInt("playlist_id");
             branch_id = jsonInput.optInt("branch_id");
             region_id = jsonInput.optInt("region_id");
             company_id = jsonInput.optInt("company_id");
 
 
-            List<Profile> profiles = profileRepository.getProfileByPlaylistId(playlist_id);
+            List<Playlist> playlistList = playlistRepository.getPlaylistById(playlist_id);
+            Playlist playlists = playlistList.get(0);
+            List<Profile> profiles = profileRepository.getProfileByPlaylistId(playlists.getProfile_id());
             if (profiles.size() != 0) {
                 profile_id = profiles.get(0).getProfile_id();
             } else {
@@ -2937,8 +3141,8 @@ public class CmsServices {
                 return response;
             }
 
-            int addNewAvailability = playlistRepository.checkAddNewPlaylistAvailability(profile_id, start_date, end_date);
-            if (addNewAvailability == 0) {
+            List<Playlist> checkAddNewPlaylistAvailability = playlistRepository.checkDateForPlaylist(profile_id, start_date, end_date, playlist_id);
+            if (checkAddNewPlaylistAvailability.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Can't update playlist : Playlist already exist for that period of time (select another start date /end date)");
@@ -2965,6 +3169,16 @@ public class CmsServices {
             } else {
                 is_default = Boolean.valueOf(is_defaultStr);
             }
+            if (is_default == true) {
+                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id);
+                if (playlistListCheckDefaultList.size() > 0) {
+                    response.setStatus("500");
+                    response.setSuccess(false);
+                    response.setMessage("Can't create playlist : default playlist already exist for this profile");
+                    return response;
+                }
+            }
+
 
             playlistRepository.updatePlaylist(playlist_name, start_date, end_date, status, is_default,
                     userOnProcess, playlist_id);
@@ -2972,6 +3186,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Playlist successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3000,6 +3215,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Playlist successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3111,6 +3327,7 @@ public class CmsServices {
 
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3157,6 +3374,7 @@ public class CmsServices {
             response.setMessage("Playlist add resource successfully");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3200,6 +3418,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3230,6 +3449,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3263,6 +3483,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3328,8 +3549,8 @@ public class CmsServices {
             runningText.setRegion_id(region_id);
             runningText.setBranch_id(branch_id);
             runningText.setStatus("active");
-            runningText.setStart_date(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(start_date));
-            runningText.setEnd_date(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(end_date));
+            runningText.setStart_date(new SimpleDateFormat("yyyy-MM-dd").parse(start_date));
+            runningText.setEnd_date(new SimpleDateFormat("yyyy-MM-dd").parse(end_date));
             runningText.setCreated_by(userOnProcess);
             runningText.setCreated_date(new Date());
             runningText.setUpdated_by("");
@@ -3342,6 +3563,7 @@ public class CmsServices {
             response.setMessage("RunningText successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3401,7 +3623,7 @@ public class CmsServices {
             start_date = "%" + jsonInput.optString("start_date") + "%";
             end_date = "%" + jsonInput.optString("end_date") + "%";
 
-            status = jsonInput.optString("status");
+            status = jsonInput.optString("status").toLowerCase();
             if (status.isEmpty()) {
                 status = "%%";
             }
@@ -3448,6 +3670,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("RunningText Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3494,6 +3717,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("RunningText Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3531,11 +3755,12 @@ public class CmsServices {
             }
             runningTextRepository.updateRunningText(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
                     jsonInput.optString("running_text"), jsonInput.optString("start_date"), jsonInput.optString("end_date"),
-                    jsonInput.optString("status"), userOnProcess, jsonInput.optInt("running_text_id"));
+                    jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("running_text_id"));
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("RunningText successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3564,6 +3789,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("RunningText successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3618,6 +3844,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setData(new ArrayList<>());
             response.setStatus("500");
             response.setSuccess(false);
@@ -3661,6 +3888,7 @@ public class CmsServices {
                 try {
                     deviceMonitoringLog.setLog_screenshot_path(getFileDirectPath(deviceMonitoringLog.getLog_screenshot_path()).getData().get("file_base64").toString());
                 } catch (Exception e) {
+                    logger.info("Failed : " + e.getMessage());
                     deviceMonitoringLog.setLog_screenshot_path("");
                 }
             }
@@ -3672,6 +3900,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device log listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setData(new ArrayList<>());
             response.setStatus("500");
             response.setSuccess(false);
@@ -3685,6 +3914,7 @@ public class CmsServices {
     public BaseResponse<String> addNewLicenseKey(String input) throws Exception {
         BaseResponse response = new BaseResponse();
         int count = 0;
+        int company_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -3695,7 +3925,13 @@ public class CmsServices {
                 response.setMessage("Token Authentication Failed");
                 return response;
             }
-            int company_id = (int) auth.get("company_id");
+            company_id = jsonInput.getInt("company_id");
+            List<Company> companies = companyRepository.getCompanyById(company_id);
+            if (companies.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("can't add license : Company with id " + company_id + " not found");
+            }
 
 //            String userOnProcess = auth.get("user_name").toString();
 //            Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
@@ -3724,14 +3960,15 @@ public class CmsServices {
             if (count > 0) {
                 response.setMessage(count + " - License Key successfully added");
             } else {
-                response.setMessage("No new license key added, all license already registered");
+                response.setMessage("can't add license : No new license key added, all license already registered");
             }
 
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
-            response.setMessage(e.getMessage());
+            response.setMessage("can't add license : " + e.getMessage());
         }
 
         return response;
@@ -3784,6 +4021,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("License key generated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed to generate license key :" + e.getMessage());
@@ -3803,13 +4041,18 @@ public class CmsServices {
                 result.put("valid", true);
                 result.put("user_name", usersList.get(0).getUser_name());
                 result.put("company_id", usersList.get(0).getCompany_id());
+                result.put("region_id", usersList.get(0).getRegion_id());
+                result.put("branch_id", usersList.get(0).getBranch_id());
             } else {
                 result.put("valid", false);
                 result.put("user_name", "");
                 result.put("company_id", "");
+                result.put("region_id", "");
+                result.put("branch_id", "");
             }
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             result.put("valid", false);
             result.put("user_name", "");
         }
@@ -3890,6 +4133,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3921,7 +4165,7 @@ public class CmsServices {
 //            channel.put(stream, attachmentPathResource +  file_name, 0);
 //
 //
-//        } catch (Exception e) {
+//        } catch (Exception e) { logger.info("Failed : "+e.getMessage())
 //            logger.info(new Date().getTime() + e.getMessage());
 //        } finally {
 //            if (session.isConnected() || session != null) {
@@ -3962,7 +4206,7 @@ public class CmsServices {
             }
 
             InputStream inputStream = channel.get(path + file_name);
-            logger.info("file path : " + path + file_name);
+//            logger.info("file path : " + path + file_name);
             byte[] bytes = IOUtils.toByteArray(inputStream);
             String base64 = Base64.getEncoder().encodeToString(bytes);
 
@@ -3974,6 +4218,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Get File success");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4067,6 +4312,7 @@ public class CmsServices {
             logger.info("error while parsing ppt :" + e.getMessage());
             return null;
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             logger.info("error while parsing ppt :" + e.getMessage());
             return null;
         } finally {
@@ -4107,6 +4353,7 @@ public class CmsServices {
             logger.info("error while get ppt image parsed :" + e.getMessage());
             return null;
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             logger.info("error while parsing ppt :" + e.getMessage());
             return null;
         } finally {
@@ -4148,6 +4395,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Get File success");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4203,6 +4451,7 @@ public class CmsServices {
 //            response.setSuccess(true);
 //            response.setMessage("Get File success");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
@@ -4253,6 +4502,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4342,6 +4592,7 @@ public class CmsServices {
             logger.info("Profile successfully Added");
 
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create profile : " + e.getMessage());
@@ -4448,6 +4699,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Profile Listed");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4517,6 +4769,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Profile successfully Updated");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4554,6 +4807,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Profile successfully deleted");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4647,6 +4901,7 @@ public class CmsServices {
             response.setMessage("Database credential found");
             response.setStatus("200");
         } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
             response.setSuccess(false);
             response.setMessage("Failed to get database credential : " + e.getMessage());
             response.setStatus("500");

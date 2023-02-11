@@ -65,5 +65,10 @@ public interface ProfileRepository extends JpaRepository<Profile, Integer> {
     @Query(value = "SELECT * from cms_2.Profile WHERE profile_id=:profile_id and status <> 'deleted' ", nativeQuery = true)
     List<Profile> getProfileByPlaylistId(@Param("profile_id") int profile_id);
 
-
+    @Query(value = "SELECT profile_id from cms_2.Profile WHERE " +
+            "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
+            "status not in('deleted')", nativeQuery = true)
+    List<Integer> getProfileIdListForUserLogin(@Param("branch_id") String branch_id,
+                                               @Param("region_id") String region_id,
+                                               @Param("company_id") String company_id);
 }

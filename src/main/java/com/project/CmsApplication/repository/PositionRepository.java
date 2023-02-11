@@ -16,6 +16,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
 
     @Query(value = "SELECT * from cms_2.Position WHERE " +
             "CAST(profile_id AS VARCHAR) like :profile_id AND " +
+            "profile_id in (:profile_id_list) AND " +
             "lower(box) like lower(:box) AND " +
             "x_pos like :x_pos AND " +
             "y_pos like :y_pos AND " +
@@ -40,7 +41,7 @@ public interface PositionRepository extends JpaRepository<Position, Integer> {
             @Param("created_by") String created_by,
             @Param("created_date") String created_date,
             @Param("updated_by") String updated_by,
-            @Param("updated_date") String updated_at);
+            @Param("updated_date") String updated_at, @Param("profile_id_list") List<Integer> profile_id_list);
 
 //    @Modifying
 //    @Query(value = "INSERT INTO cms_2.Position(status,profile_id,box,x_pos,y_pos,width,height,measurement,created_by,created_date,updated_by,updated_date) " +
