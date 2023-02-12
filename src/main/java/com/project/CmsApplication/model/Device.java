@@ -162,4 +162,22 @@ public class Device {
     public void setBranch_id(int branch_id) {
         this.branch_id = branch_id;
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "device_id=" + device_id +
+                ", status='" + status + '\'' +
+                ", company_id=" + company_id +
+                ", region_id=" + region_id +
+                ", branch_id=" + branch_id +
+                ", device_name='" + device_name + '\'' +
+                ", license_key='" + license_key + '\'' +
+                ", device_unique_id='" + device_unique_id + '\'' +
+                ", created_by='" + created_by + '\'' +
+                ", created_date=" + created_date +
+                ", updated_by='" + updated_by + '\'' +
+                ", updated_date=" + updated_date +
+                '}';
+    }
 }

@@ -2,6 +2,7 @@ package com.project.CmsApplication.Services;
 
 import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
+import com.project.CmsApplication.dto.OutputDevice;
 import com.project.CmsApplication.dto.OutputResource;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
@@ -1932,11 +1933,59 @@ public class CmsServices {
             created_by = "%" + jsonInput.optString("created_by") + "%";
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Device> getDeviceResult = deviceRepository.getDeviceList(branch_id, region_id, company_id, device_name, status, created_by, created_date, updated_by, updated_date);
+            List<OutputDevice> outputDeviceList = new ArrayList<>();
+
             for (Device device : getDeviceResult) {
-                device.setLicense_key(cmsEncryptDecrypt.decrypt(device.getLicense_key()));
+                OutputDevice outputDevice = new OutputDevice();
+                outputDevice.setDevice_id(device.getDevice_id());
+                outputDevice.setStatus(device.getStatus());
+                outputDevice.setDevice_name(device.getDevice_name());
+                outputDevice.setCompany_id(device.getCompany_id());
+                outputDevice.setRegion_id(device.getRegion_id());
+                outputDevice.setBranch_id(device.getBranch_id());
+                outputDevice.setLicense_key(device.getLicense_key());
+                outputDevice.setDevice_unique_id(device.getDevice_unique_id());
+                outputDevice.setCreated_by(device.getCreated_by());
+                outputDevice.setCreated_date(device.getCreated_date());
+                outputDevice.setUpdated_by(device.getUpdated_by());
+                outputDevice.setUpdated_date(device.getUpdated_date());
+
+                outputDeviceList.add(outputDevice);
+            }
+            for (OutputDevice outputDevice : outputDeviceList) {
+                Map resultMap = new HashMap();
+                if (outputDevice.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(outputDevice.getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (outputDevice.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(outputDevice.getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (outputDevice.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(outputDevice.getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+                outputDevice.setLicense_key(cmsEncryptDecrypt.decrypt(outputDevice.getLicense_key()));
+
+                resultMap.put("device", outputDevice);
+                result.add(resultMap);
             }
 
-            response.setData(getDeviceResult);
+
+            response.setData(result);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Device Listed");
