@@ -37,6 +37,12 @@ public class DeviceController {
         return cmsServices.addNewDevice(input);
     }
 
+    @PostMapping("/addNewDeviceMonitoringLog")
+    public BaseResponse<String> addNewDeviceMonitoringLog(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewDeviceMonitoringLog - " + input);
+        return cmsServices.addDeviceLog(input);
+    }
+
     @PostMapping("/updateDevice")
     public BaseResponse<Device> updateDevice(@RequestBody String input) throws Exception, SQLException, ParseException {
         logger.info(new Date().getTime() + " : updateDevice - " + input);

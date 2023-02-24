@@ -16,7 +16,7 @@ import java.util.List;
 @Transactional
 public interface LicenseRepository extends JpaRepository<LicenseKey, Integer> {
 
-    @Query(value = "SELECT license_key from cms_2.license where license_key not in (SELECT license_key from cms_2.device where status <> 'deleted' ) limit 1", nativeQuery = true)
-    List<String> getAvailableLicense();
+    @Query(value = "SELECT license_key from cms_2.license where license_key not in (SELECT license_key from cms_2.device where status <> 'deleted' AND company_id = :company_id) AND company_id = :company_id limit 1", nativeQuery = true)
+    List<String> getAvailableLicense(@Param("company_id") int company_id);
 
 }

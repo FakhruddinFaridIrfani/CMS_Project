@@ -2,6 +2,7 @@ package com.project.CmsApplication.Services;
 
 import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
+import com.project.CmsApplication.Utility.SftpHandler;
 import com.project.CmsApplication.dto.OutputDevice;
 import com.project.CmsApplication.dto.OutputResource;
 import com.project.CmsApplication.model.*;
@@ -117,6 +118,9 @@ public class CmsServices {
 
     @Value("${attachment.path.resource}")
     private String attachmentPathResource;
+
+    @Value("${attachment.path.screenshot}")
+    private String getAttachmentPathScreenshot;
 
     @Value("${sftp.user.name}")
     private String sftpUser;
@@ -510,10 +514,38 @@ public class CmsServices {
             updated_by = "%" + jsonInput.optString("updated_by") + "%";
             List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date, branch_id, region_id, company_id, role_id);
             for (int i = 0; i < getUserResult.size(); i++) {
+                Users users = getUserResult.get(i);
                 Map<String, Object> resultMap = new HashMap<>();
-                List<Role> roles = roleRepository.getRoleById(getUserResult.get(i).getRole_id());
-                resultMap.put("User", getUserResult.get(i));
+                List<Role> roles = roleRepository.getRoleById(users.getRole_id());
+                resultMap.put("User", users);
                 resultMap.put("Role", roles.get(0));
+                if (users.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(users.getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("Branhces Admin");
+                    resultMap.put("branch", branch);
+                }
+                if (users.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(users.getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("Region Admin");
+                    resultMap.put("region", region);
+                }
+                if (users.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(users.getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    Company company = new Company();
+                    company.setCompany_id(0);
+                    company.setCompany_name("Super Admin");
+                    resultMap.put("company", company);
+                }
                 result.add(resultMap);
             }
 
@@ -636,16 +668,45 @@ public class CmsServices {
             }
 
             for (int i = 0; i < dataLoginUser.size(); i++) {
-                List<Role> roles = roleRepository.getRoleById(dataLoginUser.get(i).getRole_id());
+                Users users = dataLoginUser.get(i);
+                List<Role> roles = roleRepository.getRoleById(users.getRole_id());
                 List<Privilege> privileges = privilegeRepository.getPrivilegeByRoleId(roles.get(0).getRole_id());
                 List<String> menuNames = new ArrayList();
                 String menu_name = privileges.get(0).getMenu_name();
                 menu_name = menu_name.replace("[", "").replace("]", "");
                 String[] menuArray = menu_name.split(",");
                 menuNames = Arrays.asList(menuArray);
-                result.put("User", dataLoginUser.get(i));
+                result.put("User", users);
                 result.put("Role", roles.get(0));
                 result.put("Privilege", menuNames);
+                if (users.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(users.getBranch_id());
+                    result.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("Branhces Admin");
+                    result.put("branch", branch);
+                }
+                if (users.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(users.getRegion_id());
+                    result.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("Region Admin");
+                    result.put("region", region);
+                }
+                if (users.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(users.getCompany_id());
+                    result.put("company", companies.get(0));
+                } else {
+                    Company company = new Company();
+                    company.setCompany_id(0);
+                    company.setCompany_name("Super Admin");
+                    result.put("company", company);
+                }
+
             }
 
             for (int i = 0; i < dataLoginUser.size(); i++) {
@@ -3958,6 +4019,85 @@ public class CmsServices {
         return response;
     }
 
+    public BaseResponse addDeviceLog(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        int device_id;
+        String created_by;
+        String folder_date = new SimpleDateFormat("yyyyMMdd").format(new Date());
+        String file_name = "Screenshot_Android_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".jpg";
+        String log_message = "Last Active on " + new SimpleDateFormat("dd-MMM-yyyy HH:mm:yy").format(new Date());
+        String screenShot;
+        String userToken;
+        JSONObject jsonInput;
+        Session session = null;
+        Channel channel = null;
+        SftpATTRS attrs = null;
+        try {
+            jsonInput = new JSONObject(input);
+            userToken = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(userToken);
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            created_by = auth.get("user_name").toString();
+            screenShot = jsonInput.getString("screenshoot");
+            device_id = Integer.valueOf(jsonInput.optString("device_id"));
+
+            session = SftpHandler.getSftpSession(sftpUser, sftpUrl, sftpPassword);
+            channel = SftpHandler.getSftpConnnection(session);
+
+            try {
+                attrs = ((ChannelSftp) channel).stat(getAttachmentPathScreenshot + folder_date);
+            } catch (Exception e) {
+                logger.info(getAttachmentPathScreenshot + folder_date + " not found");
+            }
+
+            if (attrs == null) {
+                logger.info("Create directory " + folder_date);
+                ((ChannelSftp) channel).mkdir(getAttachmentPathScreenshot + folder_date);
+            }
+
+            //Safe to SFTP
+            byte[] b = Base64.getMimeDecoder().decode(screenShot);
+            InputStream stream = new ByteArrayInputStream(b);
+            ((ChannelSftp) channel).put(stream, getAttachmentPathScreenshot + folder_date + "/" + file_name, 0);
+
+            //Safe to DB
+            DeviceMonitoringLog deviceMonitoringLog = new DeviceMonitoringLog();
+            deviceMonitoringLog.setLog_screenshot_path(getAttachmentPathScreenshot + folder_date + "/" + file_name);
+            deviceMonitoringLog.setDevice_id(device_id);
+            deviceMonitoringLog.setLog_message(log_message);
+            deviceMonitoringLog.setCreated_by(created_by);
+            deviceMonitoringLog.setCreated_date(new Date());
+            deviceMonitoringLog.setUpdated_by("");
+            deviceMonitoringLog.setUpdated_date(new Date());
+            deviceMonitoringLog.setStatus("active");
+
+            deviceMonitoringLogRepository.save(deviceMonitoringLog);
+
+
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Log device stored !");
+
+        } catch (Exception e) {
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage("Failed to store device log : " + e.getMessage());
+        } finally {
+            if (channel != null) SftpHandler.closeChannel(channel);
+            if (session != null) SftpHandler.closeSession(session);
+
+        }
+
+
+        return response;
+    }
+
 
     //LICENSE KEY SECTION
     public BaseResponse<String> addNewLicenseKey(String input) throws Exception {
@@ -4039,15 +4179,15 @@ public class CmsServices {
             int device_id = jsonInput.getInt("device_id");
 
 
-            List<Device> checkIsLicenseAlreadyGenerated = deviceRepository.getDeviceById(device_id);
-            if (!checkIsLicenseAlreadyGenerated.get(0).getLicense_key().isEmpty()) {
+            List<Device> deviceDetailByDeviceId = deviceRepository.getDeviceById(device_id);
+            if (!deviceDetailByDeviceId.get(0).getLicense_key().isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("Failed to generate license key, this device already has license key");
                 return response;
             }
 
-            List<String> availableLicense = licenseRepository.getAvailableLicense();
+            List<String> availableLicense = licenseRepository.getAvailableLicense(deviceDetailByDeviceId.get(0).getCompany_id());
             if (availableLicense.size() == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -4906,25 +5046,26 @@ public class CmsServices {
             jsonInput = new JSONObject(input);
             configuration_name = jsonInput.optString("configuration_name");
             configuration_value = jsonInput.optString("configuration_value");
+            if (jsonInput != null && !configuration_name.equals("") && !configuration_value.equals("")) {
+                Configuration configuration = new Configuration();
+                configuration.setConfiguration_name(configuration_name);
+                configuration.setConfiguration_value(configuration_value);
+                configurationRepository.save(configuration);
+                result.setStatus("2000");
+                result.setSuccess(true);
+                result.setMessage("Config added");
+            } else {
+                result.setStatus("0");
+                result.setSuccess(false);
+                result.setMessage("Some field is empty");
+            }
         } catch (JSONException e) {
             result.setStatus("0");
             result.setSuccess(false);
             result.setMessage(e.getMessage());
             return result;
         }
-        if (jsonInput != null && !configuration_name.equals("") && !configuration_value.equals("")) {
-            Configuration configuration = new Configuration();
-            configuration.setConfiguration_name(configuration_name);
-            configuration.setConfiguration_value(configuration_value);
-            configurationRepository.save(configuration);
-            result.setStatus("2000");
-            result.setSuccess(true);
-            result.setMessage("Config added");
-        } else {
-            result.setStatus("0");
-            result.setSuccess(false);
-            result.setMessage("Some field is empty");
-        }
+
         return result;
     }
 

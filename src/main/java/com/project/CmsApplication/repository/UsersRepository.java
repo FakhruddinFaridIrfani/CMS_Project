@@ -75,7 +75,7 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     void deleteUser(@Param("user_id") int user_id, @Param("updated_by") String updated_by);
 
     @Query(value = "SELECT * from cms_2.Users " +
-            "where (user_name =:user_name OR user_email=:user_email) AND user_password = crypt(:user_password, user_password)", nativeQuery = true)
+            "where (user_name =:user_name OR user_email=:user_email) AND user_password = crypt(:user_password, user_password) and status = 'active'", nativeQuery = true)
     List<Users> loginUser(@Param("user_name") String user_name, @Param("user_email") String user_email, @Param("user_password") String user_password);
 
     @Modifying
