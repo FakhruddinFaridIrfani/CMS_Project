@@ -3,6 +3,7 @@ package com.project.CmsApplication.Services;
 import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.Utility.SftpHandler;
+import com.project.CmsApplication.dto.OutputDesktopPlaylist;
 import com.project.CmsApplication.dto.OutputDevice;
 import com.project.CmsApplication.dto.OutputResource;
 import com.project.CmsApplication.model.*;
@@ -2546,8 +2547,10 @@ public class CmsServices {
             String thumbnail = "";
             if (!jsonInput.optString("file").isEmpty() && !file_name.isEmpty()) {
                 Map<String, String> fileAddResult = addFile(file_name, jsonInput.optString("file"), "resource").getData();
-                ParseToImage(file_name);
                 file = fileAddResult.get("file");
+                if (type.compareToIgnoreCase("application/vnd.openxmlformats-officedocument.presentationml.presentation") == 0 || type.compareToIgnoreCase("application/vnd.ms-powerpoint") == 0) {
+                    ParseToImage(file);
+                }
                 thumbnail = fileAddResult.get("thumbnail");
             }
 
@@ -3152,6 +3155,7 @@ public class CmsServices {
                 Map resultMap = new HashMap();
                 if (getResultPlayList.get(i).getBranch_id() != 0) {
                     List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
+                    if (branch.size() == 0) continue;
                     resultMap.put("branch", branch.get(0));
                 } else {
                     Branch branch = new Branch();
@@ -3162,6 +3166,7 @@ public class CmsServices {
 //                logger.info("branch ok");
                 if (getResultPlayList.get(i).getRegion_id() != 0) {
                     List<Region> regions = regionRepository.getRegionById(getResultPlayList.get(i).getRegion_id());
+                    if (regions.size() == 0) continue;
                     resultMap.put("region", regions.get(0));
                 } else {
                     Region region = new Region();
@@ -3172,12 +3177,14 @@ public class CmsServices {
 //                logger.info("region ok");
                 if (getResultPlayList.get(i).getCompany_id() != 0) {
                     List<Company> companies = companyRepository.getCompanyById(getResultPlayList.get(i).getCompany_id());
+                    if (companies.size() == 0) continue;
                     resultMap.put("company", companies.get(0));
                 } else {
                     resultMap.put("company", "All Companies");
                 }
 //                logger.info("company ok");
                 List<Profile> profileList = profileRepository.getProfileById(playlist.getProfile_id());
+                if (profileList.size() == 0) continue;
 //                List<Position> positions = positionRepository.getPositionById(getResultPlayList.get(i).getPosition_id());
 //                logger.info("position ok");
 //                List<Device> devices = deviceRepository.getDeviceById(positions.get(0).getProfile_id());
@@ -3339,7 +3346,7 @@ public class CmsServices {
         return getPlaylistResource;
     }
 
-    public BaseResponse getPlaylistByProfileId(String input) throws SQLException, Exception {
+    public BaseResponse getPlaylistByProfileIdAndroid(String input) throws SQLException, Exception {
         BaseResponse response = new BaseResponse();
         List results = new ArrayList();
         try {
@@ -3354,10 +3361,25 @@ public class CmsServices {
             }
             int profile_id = jsonInput.getInt("profile_id");
             List<Position> getPositionByProfileId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
+            if (getPositionByProfileId.size() == 0) {
+                response.setData(new ArrayList<>());
+                response.setStatus("404");
+                response.setSuccess(false);
+                response.setMessage("This profile don't have any layout");
+                return response;
+            }
+
             for (int i = 0; i < getPositionByProfileId.size(); i++) {
                 Map resultData = new HashMap();
                 Position position = getPositionByProfileId.get(i);
                 List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
+                if (playlistList.size() == 0) {
+                    response.setData(new ArrayList<>());
+                    response.setStatus("404");
+                    response.setSuccess(false);
+                    response.setMessage("No playlist for this profile");
+                    return response;
+                }
                 resultData.put("position_id", position.getPosition_id());
                 resultData.put("box", position.getBox());
                 resultData.put("x_position", position.getX_pos());
@@ -3389,7 +3411,7 @@ public class CmsServices {
                         resultResourceMap.put("resource_stretch", resource.getStretch());
                         resultResourceMap.put("resource_url", resource.getUrl_resource());
                         List<String> urlDownload = new ArrayList<>();
-                        if (!resource.getType().isEmpty()) {
+                        if (!resource.getType().isEmpty() && resource.getType().compareToIgnoreCase("web") != 0) {
                             String type = resource.getType();
 //                            logger.info("resource type : " + type);
                             String fileExtension = resource.getFile().split("\\.")[1];
@@ -3430,9 +3452,10 @@ public class CmsServices {
                 response.setSuccess(true);
                 response.setMessage("Playlist Listed");
             } else {
+                response.setData(new ArrayList<>());
                 response.setStatus("404");
                 response.setSuccess(false);
-                response.setMessage("No playlist found for this device");
+                response.setMessage("No playlist found for this profile");
             }
 
 
@@ -3442,6 +3465,205 @@ public class CmsServices {
             response.setSuccess(false);
             response.setMessage(e.getMessage());
         }
+        return response;
+    }
+
+    public BaseResponse getPlaylistByProfileIDesktop(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        List results = new ArrayList();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            int profile_id = jsonInput.getInt("profile_id");
+            List<Position> getPositionByProfileId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
+            if (getPositionByProfileId.size() == 0) {
+                response.setData(new ArrayList<>());
+                response.setStatus("404");
+                response.setSuccess(false);
+                response.setMessage("This profile don't have any layout");
+                return response;
+            }
+
+            for (int i = 0; i < getPositionByProfileId.size(); i++) {
+                Map resultData = new HashMap();
+                Position position = getPositionByProfileId.get(i);
+                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
+                if (playlistList.size() == 0) {
+                    response.setData(new ArrayList<>());
+                    response.setStatus("404");
+                    response.setSuccess(false);
+                    response.setMessage("No playlist for this profile");
+                    return response;
+                }
+                resultData.put("position_id", position.getPosition_id());
+                resultData.put("box", position.getBox());
+                resultData.put("x_position", position.getX_pos());
+                resultData.put("y_position", position.getY_pos());
+                resultData.put("height", position.getHeight());
+                resultData.put("weight", position.getWidth());
+                resultData.put("uom", position.getMeasurement());
+                List playlistResult = new ArrayList();
+                for (int j = 0; j < playlistList.size(); j++) {
+                    Map resultPlayListMap = new HashMap();
+                    Playlist playlist = playlistList.get(j);
+                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylistAndPosition(playlist.getPlaylist_id(), position.getPosition_id());
+                    resultPlayListMap.put("playlist_id", playlist.getPlaylist_id());
+                    resultPlayListMap.put("playlist_name", playlist.getPlaylist_name());
+                    resultPlayListMap.put("start_date", playlist.getStart_date());
+                    resultPlayListMap.put("end_date", playlist.getEnd_date());
+                    resultPlayListMap.put("is_default", playlist.isIs_default());
+                    List resourcesResult = new ArrayList();
+                    for (int k = 0; k < getPlaylistResource.size(); k++) {
+                        Map resultResourceMap = new HashMap();
+                        PlaylistResource playlistResource = getPlaylistResource.get(k);
+                        List<Resource> resourceList = resourceRepository.getResourceById(playlistResource.getResource_id());
+                        Resource resource = resourceList.get(0);
+                        resultResourceMap.put("order", playlistResource.getOrder());
+                        resultResourceMap.put("resource_id", resource.getResource_id());
+                        resultResourceMap.put("resource_name", resource.getResource_name());
+                        resultResourceMap.put("resource_type", resource.getType());
+                        resultResourceMap.put("resource_duration", resource.getDuration());
+                        resultResourceMap.put("resource_stretch", resource.getStretch());
+                        resultResourceMap.put("resource_url", resource.getUrl_resource());
+                        List<String> urlDownload = new ArrayList<>();
+                        if (!resource.getType().isEmpty() && resource.getType().compareToIgnoreCase("web") != 0) {
+                            String fileName = resource.getFile();
+                            urlDownload.add("/resource/downloadResource/" + fileName);
+                        }
+
+                        resultResourceMap.put("url_download", urlDownload);
+                        resourcesResult.add(resultResourceMap);
+                    }
+                    resultPlayListMap.put("resources", resourcesResult);
+
+                    playlistResult.add(resultPlayListMap);
+                }
+
+
+                resultData.put("playlist", playlistResult);
+                results.add(resultData);
+            }
+            if (results.size() > 0) {
+                response.setData(results);
+                response.setStatus("200");
+                response.setSuccess(true);
+                response.setMessage("Playlist Listed");
+            } else {
+                response.setData(new ArrayList<>());
+                response.setStatus("404");
+                response.setSuccess(false);
+                response.setMessage("No playlist found for this profile");
+            }
+
+
+        } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
+    public BaseResponse getPlaylistDesktop(String input) throws SQLException, Exception {
+        BaseResponse response = new BaseResponse();
+        List results = new ArrayList();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            int position_id = jsonInput.getInt("position_id");
+            List<Position> positionList = getPositionById(position_id);
+            if (positionList.size() == 0) {
+                response.setData(new ArrayList<>());
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Position not found");
+                return response;
+            }
+            List<String> stringList = resourceRepository.getDesktopPlayList(position_id);
+            if (stringList.size() == 0) {
+                response.setData(new ArrayList<>());
+                response.setStatus("200");
+                response.setSuccess(true);
+                response.setMessage("No resource for this position");
+                return response;
+            }
+            for (String playlist : stringList) {
+                List<String> list = new ArrayList<String>(Arrays.asList(playlist.split(",")));
+                Map res = new HashMap();
+                res.put("resource_id", list.get(0));
+                res.put("type", list.get(1));
+                res.put("file", list.get(2));
+                res.put("url_resource", list.get(3));
+                res.put("duration", list.get(4));
+                res.put("stretch", list.get(5));
+                res.put("sequence", list.get(6));
+                if (list.get(1).compareToIgnoreCase("web") == 0) {
+                    res.put("url_download", "");
+                } else {
+                    String url_download = "/resource/downloadResource/" + list.get(2);
+                    res.put("url_download", url_download);
+                }
+
+                results.add(res);
+
+            }
+
+//            List<OutputDesktopPlaylist> desktopPlaylists = resourceRepository.getDesktopPlayList(position_id);
+//            if (desktopPlaylists.size() == 0) {
+//                response.setData(new ArrayList<>());
+//                response.setStatus("200");
+//                response.setSuccess(true);
+//                response.setMessage("No resource for this position");
+//                return response;
+//            }
+//            for (OutputDesktopPlaylist playlist : desktopPlaylists) {
+//                Map res = new HashMap();
+//                res.put("resource_id", playlist.getResource_id());
+//                res.put("type", playlist.getType());
+//                res.put("file", playlist.getFile());
+//                res.put("url_resource", playlist.getUrl_resource());
+//                res.put("duration", playlist.getDuration());
+//                res.put("stretch", playlist.getStretch());
+//                res.put("sequence", playlist.getSequence());
+//                if (playlist.getType().compareToIgnoreCase("web") == 0) {
+//                    res.put("url_download", "");
+//                } else {
+//                    String url_download = "/resource/downloadResource/" + playlist.getFile();
+//                    res.put("url_download", url_download);
+//                }
+//
+//                results.add(res);
+//
+//            }
+            response.setData(results);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Resource for playlist listed");
+            return response;
+
+        } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
         return response;
     }
 
@@ -4048,7 +4270,7 @@ public class CmsServices {
             device_id = Integer.valueOf(jsonInput.optString("device_id"));
 
             session = SftpHandler.getSftpSession(sftpUser, sftpUrl, sftpPassword);
-            channel = SftpHandler.getSftpConnnection(session);
+            channel = SftpHandler.getSftpConnection(session);
 
             try {
                 attrs = ((ChannelSftp) channel).stat(getAttachmentPathScreenshot + folder_date);
@@ -4475,7 +4697,7 @@ public class CmsServices {
 //                System.out.println(fileNameWithOutExt);
 //                OutputStream outputStream = channel.put(attachmentPathResource + fileNameOnly + "-" + i + ".png", 0);
 
-                String imageFileName = fileNameOnly + "-" + i + ".png";
+                String imageFileName = fileNameOnly + "-" + i + ".jpg";
                 logger.info("image name : " + imageFileName);
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 ImageIO.write(img, "png", os);
@@ -5042,16 +5264,29 @@ public class CmsServices {
         JSONObject jsonInput = null;
         String configuration_name = "";
         String configuration_value = "";
+        String existing_configuration = "";
+        List<Configuration> configurationList = configurationRepository.findAll();
         try {
             jsonInput = new JSONObject(input);
             configuration_name = jsonInput.optString("configuration_name");
             configuration_value = jsonInput.optString("configuration_value");
+            for (Configuration configuration : configurationList) {
+                if (configuration.getConfiguration_name().compareToIgnoreCase(configuration_name) == 0) {
+                    existing_configuration = configuration.getConfiguration_value();
+                }
+            }
+            if (!existing_configuration.isEmpty()) {
+                result.setStatus("500");
+                result.setSuccess(false);
+                result.setMessage("Configuration name already exist");
+                return result;
+            }
             if (jsonInput != null && !configuration_name.equals("") && !configuration_value.equals("")) {
                 Configuration configuration = new Configuration();
                 configuration.setConfiguration_name(configuration_name);
                 configuration.setConfiguration_value(configuration_value);
                 configurationRepository.save(configuration);
-                result.setStatus("2000");
+                result.setStatus("200");
                 result.setSuccess(true);
                 result.setMessage("Config added");
             } else {
@@ -5060,10 +5295,14 @@ public class CmsServices {
                 result.setMessage("Some field is empty");
             }
         } catch (JSONException e) {
-            result.setStatus("0");
+            result.setStatus("500");
             result.setSuccess(false);
             result.setMessage(e.getMessage());
-            return result;
+
+        } catch (Exception e) {
+            result.setStatus("500");
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
         }
 
         return result;
@@ -5096,6 +5335,58 @@ public class CmsServices {
             response.setMessage("Failed to get database credential : " + e.getMessage());
             response.setStatus("500");
         }
+        return response;
+    }
+
+    public BaseResponse getDesktopProperties() {
+        BaseResponse response = new BaseResponse();
+        Map<String, String> desktopProperties = new HashMap<>();
+        List<Configuration> configurationList = configurationRepository.findAll();
+        String sftpCredentials = "";
+        String pathResource = "";
+        String pathScreenshot = "";
+        String dbSchema = "";
+        try {
+            for (Configuration configuration : configurationList) {
+                if (configuration.getConfiguration_name().compareToIgnoreCase("sftp_credentials") == 0) {
+                    sftpCredentials = configuration.getConfiguration_value();
+                }
+                if (configuration.getConfiguration_name().compareToIgnoreCase("path_resource") == 0) {
+                    pathResource = configuration.getConfiguration_value();
+                }
+                if (configuration.getConfiguration_name().compareToIgnoreCase("path_screenshot") == 0) {
+                    pathScreenshot = configuration.getConfiguration_value();
+                }
+                if (configuration.getConfiguration_name().compareToIgnoreCase("db_schema") == 0) {
+                    dbSchema = configuration.getConfiguration_value();
+                }
+
+            }
+            if (sftpCredentials.isEmpty() || pathResource.isEmpty() || pathScreenshot.isEmpty() || dbSchema.isEmpty()) {
+                response.setSuccess(false);
+                response.setMessage("One or more properties not found, check your configuration");
+                response.setStatus("404");
+                return response;
+            }
+            String encryptedSftpCredential = cmsEncryptDecrypt.encrypt(sftpCredentials.getBytes());
+
+            desktopProperties.put("sftpCredentials", encryptedSftpCredential);
+            desktopProperties.put("pathResource", pathResource);
+            desktopProperties.put("pathScreenshot", pathScreenshot);
+            desktopProperties.put("dbSchema", dbSchema);
+
+            response.setData(desktopProperties);
+            response.setSuccess(true);
+            response.setMessage("Properties listed");
+            response.setStatus("200");
+
+        } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
+            response.setSuccess(false);
+            response.setMessage("Failed to get properties : " + e.getMessage());
+            response.setStatus("500");
+        }
+
         return response;
     }
 

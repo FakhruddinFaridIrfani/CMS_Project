@@ -12,7 +12,7 @@ public class SftpHandler {
     static Logger logger = LoggerFactory.getLogger(SftpHandler.class);
 
 
-    public static ChannelSftp getSftpConnnection(Session session) {
+    public static ChannelSftp getSftpConnection(Session session) {
         ChannelSftp channel = null;
         try {
             channel = (ChannelSftp) session.openChannel("sftp");

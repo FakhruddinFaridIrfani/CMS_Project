@@ -1,5 +1,6 @@
 package com.project.CmsApplication.repository;
 
+import com.project.CmsApplication.dto.OutputDesktopPlaylist;
 import com.project.CmsApplication.model.Resource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -71,6 +72,16 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
     @Query(value = "UPDATE cms_2.Resource SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE resource_id=:resource_id", nativeQuery = true)
     void deleteResource(@Param("resource_id") int resource_id, @Param("updated_by") String updated_by);
+
+    @Query(value = "SELECT C.resource_id, C.type, C.file, C.url_resource " +
+            ", C.duration, C.stretch, ROW_NUMBER() OVER (ORDER BY A.sort, B.resource_order) AS sequence " +
+            "FROM cms_2.playlist A " +
+            "LEFT JOIN cms_2.playlist_resource B ON A.playlist_id = B.playlist_id " +
+            "LEFT JOIN cms_2.resource C ON B.resource_id = C.resource_id " +
+            "WHERE B.position_id = :position_id " +
+            "AND NOW() BETWEEN A.start_date AND A.end_date  " +
+            "AND A.status = 'active' AND B.status = 'active' AND C.status = 'active';", nativeQuery = true)
+    List<String> getDesktopPlayList(@Param("position_id") int position_id);
 
 
 }

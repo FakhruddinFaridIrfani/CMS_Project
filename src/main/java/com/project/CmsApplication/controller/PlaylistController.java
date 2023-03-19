@@ -51,6 +51,12 @@ public class PlaylistController {
     @PostMapping("/getPlaylistAndroid")
     public BaseResponse getPlaylistAndroid(@RequestBody String input) throws Exception, SQLException, ParseException {
         logger.info(new Date().getTime() + " : getPlaylistAndroid - " + input);
-        return cmsServices.getPlaylistByProfileId(input);
+        return cmsServices.getPlaylistByProfileIdAndroid(input);
+    }
+
+    @PostMapping("/getPlaylistDesktop")
+    public BaseResponse getPlaylistDesktop(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getPlaylistDesktop - " + input);
+        return cmsServices.getPlaylistByProfileIDesktop(input);
     }
 }
