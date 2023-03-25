@@ -3427,7 +3427,22 @@ public class CmsServices {
 //                                    logger.info("image generated : " + pptImageList.size());
                                 }
 //                                logger.info("image already generated, count :" + pptImageList.size());
-                                urlDownload.addAll(pptImageList);
+                                List<Integer> imageNumberList = new ArrayList<>();
+                                String imagePrefix = pptImageList.get(0).split("\\(")[0];
+                                for (String s : pptImageList) {
+                                    String imageNumberWithExtension = s.split("\\(")[1];
+                                    int imageNumber = Integer.valueOf(imageNumberWithExtension.replace(".jpg", "").replace("(","").replace(")",""));
+                                    imageNumberList.add(imageNumber);
+
+                                }
+                                List<String> sortedImage = new ArrayList<>();
+                                Collections.sort(imageNumberList);
+                                for (Integer num : imageNumberList) {
+                                    String imageName = imagePrefix.concat("(").concat(num.toString()).concat(").jpg");
+                                    sortedImage.add(imageName);
+                                }
+                                logger.info("sorted : " + sortedImage);
+                                urlDownload.addAll(sortedImage);
 
                             } else {
                                 urlDownload.add("/resource/downloadResource/" + resource.getFile());
@@ -4697,7 +4712,7 @@ public class CmsServices {
 //                System.out.println(fileNameWithOutExt);
 //                OutputStream outputStream = channel.put(attachmentPathResource + fileNameOnly + "-" + i + ".png", 0);
 
-                String imageFileName = fileNameOnly + "-" + i + ".jpg";
+                String imageFileName = fileNameOnly + "(" + i + ").jpg";
                 logger.info("image name : " + imageFileName);
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 ImageIO.write(img, "png", os);
@@ -4749,7 +4764,7 @@ public class CmsServices {
             session.connect();
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect();
-            String searchImageName = file_name.concat("-");
+            String searchImageName = file_name.concat("(");
             Vector<ChannelSftp.LsEntry> imageFileGenerated = channel.ls(attachmentPathResource);
             for (ChannelSftp.LsEntry entry : imageFileGenerated) {
                 if (!entry.getAttrs().isDir()) {
