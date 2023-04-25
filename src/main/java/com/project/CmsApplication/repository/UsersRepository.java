@@ -1,7 +1,7 @@
 package com.project.CmsApplication.repository;
 
 import com.project.CmsApplication.model.Users;
-import netscape.javascript.JSObject;
+//import netscape.javascript.JSObject;
 import org.json.JSONObject;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -63,9 +63,10 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     List<Users> tokenAuth(@Param("user_token") String user_token);
 
     @Modifying
-    @Query(value = "UPDATE cms_2.Users SET user_email=:user_email," +
+    @Query(value = "UPDATE cms_2.Users SET user_email=:user_email, user_password = CASE " +
+            " WHEN :user_password IS NULL then user_password else crypt(:user_password, gen_salt('bf')) end," +
             "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,role_id=:role_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
-    void updateUser(@Param("user_email") String user_email,
+    void updateUser(@Param("user_email") String user_email,@Param("user_password") String user_password,
                     @Param("status") String status, @Param("user_full_name") String user_full_name,
                     @Param("updated_by") String updated_by, @Param("branch_id") int branch_id,
                     @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("role_id") int role_id, @Param("user_id") int user_id);

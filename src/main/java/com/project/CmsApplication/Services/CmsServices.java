@@ -3,13 +3,14 @@ package com.project.CmsApplication.Services;
 import com.jcraft.jsch.*;
 import com.project.CmsApplication.Utility.DateFormatter;
 import com.project.CmsApplication.Utility.SftpHandler;
-import com.project.CmsApplication.dto.OutputDesktopPlaylist;
 import com.project.CmsApplication.dto.OutputDevice;
 import com.project.CmsApplication.dto.OutputResource;
+import com.project.CmsApplication.dto.OutputUsers;
 import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.json.JSONArray;
@@ -38,6 +39,9 @@ import java.util.Base64;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
+
+import static com.project.CmsApplication.Utility.CmsConstantMessage.*;
+;
 
 @Service
 @Slf4j
@@ -104,6 +108,12 @@ public class CmsServices {
     @Autowired
     ConfigurationRepository configurationRepository;
 
+    @Autowired
+    CmsLogService cmsLogService;
+
+    @Autowired
+    CmsLogRepository cmsLogRepository;
+
 
 //    @Autowired
 //    @Qualifier("entityManagerFactory")
@@ -137,6 +147,10 @@ public class CmsServices {
     public BaseResponse<String> addNewRole(String input) throws Exception {
         BaseResponse response = new BaseResponse();
         String role_name;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -148,13 +162,19 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             role_name = jsonInput.optString("role_name");
+
             //Existing Role Name check
             List<Role> roleNameCheckResult = roleRepository.getRoleByName(role_name);
             if (roleNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Role name already exist / used");
+                response.setMessage(ROLE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_ROLE, input, FAILED_MESSAGE, ROLE_NAME_EXIST);
                 return response;
             }
 
@@ -175,13 +195,15 @@ public class CmsServices {
 
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Role successfully Added");
+            response.setMessage(ROLE_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_ROLE, input, SUCCESS_MESSAGE, ROLE_CREATED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_ROLE, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -237,6 +259,10 @@ public class CmsServices {
 
     public BaseResponse<Role> updateRole(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -249,30 +275,42 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             //Existing Role Name check
             List<Role> roleNameCheckResult = roleRepository.getRoleByNameExceptId(jsonInput.optString("role_name"), jsonInput.optInt("role_id"));
             if (roleNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Role name already exist / used");
+                response.setMessage(ROLE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_ROLE, input, FAILED_MESSAGE, ROLE_NAME_EXIST);
                 return response;
             }
             roleRepository.updateRole(jsonInput.optString("role_name"), jsonInput.optString("status").toLowerCase(),
                     userOnProcess, jsonInput.optInt("role_id"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Role successfully Updated");
+            response.setMessage(ROLE_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_ROLE, input, SUCCESS_MESSAGE, ROLE_UPDATED);
+
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_ROLE, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
 
     public BaseResponse<Role> deleteRole(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -285,23 +323,30 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             List<Users> usedRoleOnUser = usersRepository.getUserByRoleId(jsonInput.optInt("role_id"));
             if (usedRoleOnUser.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("The role still used by " + usedRoleOnUser.size() + " user(s)");
+                response.setMessage(ROLE_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_ROLE, input, FAILED_MESSAGE, ROLE_STILL_USED);
                 return response;
             }
 
             roleRepository.deleteRole(jsonInput.optInt("role_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Role successfully deleted");
+            response.setMessage(ROLE_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_ROLE, input, SUCCESS_MESSAGE, ROLE_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_ROLE, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -363,6 +408,10 @@ public class CmsServices {
         BaseResponse response = new BaseResponse();
         String menu_name;
         int role_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -374,19 +423,24 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
-
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             menu_name = jsonInput.optString("menu_name");
             role_id = jsonInput.optInt("role_id");
 
             privilegeRepository.updatePrivilegeMenuName(menu_name, userOnProcess, role_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Previlege successfully Updated");
+            response.setMessage(PRIVILEGE_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PRIVILEGE, input, SUCCESS_MESSAGE, PRIVILEGE_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PRIVILEGE, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -403,18 +457,28 @@ public class CmsServices {
         String user_password;
         String user_email;
         String user_full_name;
+        String user_token;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            user_token = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(user_token);
 
             //Token Auth
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
+                response.setMessage(TOKEN_AUTHENTICATION_FAILED);
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             String userToken = Long.toHexString(new Date().getTime());
             branch_id = jsonInput.optInt("branch_id");
             region_id = jsonInput.optInt("region_id");
@@ -430,27 +494,31 @@ public class CmsServices {
             if (userNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("User name already exist / used");
+                response.setMessage(USER_NAME_ALREADY_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_USER, (new JSONObject(input).put("password", "")).toString(), FAILED_MESSAGE, USER_NAME_ALREADY_EXIST);
                 return response;
             }
 
             if (role_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("User role can't be empty");
+                response.setMessage(USER_ROLE_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_USER, (new JSONObject(input).put("password", "")).toString(), FAILED_MESSAGE, USER_NAME_ALREADY_EXIST);
                 return response;
             }
 
             usersRepository.save(user_name, user_password, user_email, user_full_name, userOnProcess, userToken, branch_id, region_id, company_id, role_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("User successfully Added");
+            response.setMessage(USER_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_USER, (new JSONObject(input).put("password", "")).toString(), SUCCESS_MESSAGE, USER_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_USER, (new JSONObject(input).put("password", "")).toString(), FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -516,9 +584,25 @@ public class CmsServices {
             List<Users> getUserResult = usersRepository.getUsersList(user_name, user_email, status, user_full_name, created_by, created_date, updated_by, updated_date, branch_id, region_id, company_id, role_id);
             for (int i = 0; i < getUserResult.size(); i++) {
                 Users users = getUserResult.get(i);
+                OutputUsers outputUsers = new OutputUsers();
+                outputUsers.setUser_id(users.getUser_id());
+                outputUsers.setUser_name(users.getUser_name());
+                outputUsers.setRole_id(users.getRole_id());
+                outputUsers.setUser_email(users.getUser_email());
+                outputUsers.setUser_password("");
+                outputUsers.setStatus(users.getStatus());
+                outputUsers.setUser_full_name(users.getUser_full_name());
+                outputUsers.setUser_token(users.getUser_token());
+                outputUsers.setCreated_by(users.getCreated_by());
+                outputUsers.setCreated_date(users.getCreated_date());
+                outputUsers.setUpdated_by(users.getUpdated_by());
+                outputUsers.setUpdated_date(users.getUpdated_date());
+                outputUsers.setCompany_id(users.getCompany_id());
+                outputUsers.setRegion_id(users.getRegion_id());
+                outputUsers.setBranch_id(users.getBranch_id());
                 Map<String, Object> resultMap = new HashMap<>();
                 List<Role> roles = roleRepository.getRoleById(users.getRole_id());
-                resultMap.put("User", users);
+                resultMap.put("User", outputUsers);
                 resultMap.put("Role", roles.get(0));
                 if (users.getBranch_id() != 0) {
                     List<Branch> branch = branchRepository.getBranchById(users.getBranch_id());
@@ -551,9 +635,9 @@ public class CmsServices {
             }
 
 
-            for (int i = 0; i < getUserResult.size(); i++) {
-                getUserResult.get(i).setUser_password("null");
-            }
+//            for (int i = 0; i < getUserResult.size(); i++) {
+//                getUserResult.get(i).setUser_password("null");
+//            }
             response.setData(result);
 
             response.setStatus("200");
@@ -570,10 +654,27 @@ public class CmsServices {
 
     public BaseResponse<Users> updateUsers(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
+
+        String user_email;
+        String status;
+        String user_full_name;
+        String user_password;
+        String user_token;
+        int branch_id;
+        int region_id;
+        int company_id;
+        int role_id;
+        int user_id;
+
 
         try {
             JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+            user_token = jsonInput.optString("user_token");
+            Map<String, Object> auth = tokenAuthentication(user_token);
 
             if (Boolean.valueOf(auth.get("valid").toString()) == false) {
                 response.setStatus("500");
@@ -589,27 +690,58 @@ public class CmsServices {
 //                return response;
 //            }
             String userOnProcess = auth.get("user_name").toString();
-            if (jsonInput.optInt("role_id") == 0) {
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
+
+            user_email = jsonInput.optString("user_email");
+            status = jsonInput.optString("status").toLowerCase();
+            user_full_name = jsonInput.optString("user_full_name");
+            branch_id = jsonInput.optInt("branch_id");
+            region_id = jsonInput.optInt("region_id");
+            company_id = jsonInput.optInt("company_id");
+            role_id = jsonInput.optInt("role_id");
+            user_id = jsonInput.optInt("user_id");
+            user_password = jsonInput.optString("user_password");
+            if (user_password.isEmpty()) user_password = null;
+
+            if (role_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("User role can't be empty");
+                response.setMessage(USER_ROLE_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_USER, input, FAILED_MESSAGE, USER_ROLE_NULL);
                 return response;
             }
 
-            usersRepository.updateUser(jsonInput.optString("user_email"),
-                    jsonInput.optString("status").toLowerCase(), jsonInput.optString("user_full_name"),
-                    userOnProcess, jsonInput.optInt("branch_id"),
-                    jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("role_id"), jsonInput.optInt("user_id"));
+            usersRepository.updateUser(user_email, user_password, status, user_full_name, userOnProcess, branch_id,
+                    region_id, company_id, role_id, user_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("User successfully Updated");
+            response.setMessage(USER_UPDATED);
 
+            //LOG BUILDER
+            OutputUsers outputUsers = new OutputUsers();
+            outputUsers.setUser_id(user_id);
+            outputUsers.setRole_id(role_id);
+            outputUsers.setUser_email(user_email);
+            outputUsers.setUser_password("");
+            outputUsers.setStatus(status);
+            outputUsers.setUser_full_name(user_full_name);
+            outputUsers.setUser_token(user_token);
+            outputUsers.setUpdated_by(userOnProcess);
+            outputUsers.setUpdated_date(new Date());
+            outputUsers.setCompany_id(company_id);
+            outputUsers.setRegion_id(region_id);
+            outputUsers.setBranch_id(branch_id);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_USER, outputUsers.toString(), SUCCESS_MESSAGE, USER_UPDATED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_USER, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -618,6 +750,10 @@ public class CmsServices {
 
     public BaseResponse<Users> deleteUsers(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -630,15 +766,19 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+
+
             usersRepository.deleteUser(jsonInput.optInt("user_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("User successfully deleted");
+            response.setMessage(USER_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_USER, input, SUCCESS_MESSAGE, USER_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_USER, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -647,16 +787,19 @@ public class CmsServices {
         BaseResponse response = new BaseResponse();
         Map<String, Object> result = new HashMap<>();
         List<Users> dataLoginUser;
+        String user_name = null;
 
         try {
             JSONObject jsonInput = new JSONObject(input);
             //user status check
-            List<Users> userNameCheckResult = usersRepository.getUsersByName(jsonInput.optString("user_name"));
+            user_name = jsonInput.optString("user_name");
+            List<Users> userNameCheckResult = usersRepository.getUsersByName(user_name);
             if (userNameCheckResult.size() > 0) {
                 if (userNameCheckResult.get(0).getStatus().compareToIgnoreCase("active") != 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
-                    response.setMessage("Failed to login. User no longer exist");
+                    response.setMessage(USER_NOT_EXIST);
+                    cmsLogService.createNewLogEntry(user_name, "", "", "", USER_LOGIN, (new JSONObject().put("password", "").put("user_name", user_name)).toString(), FAILED_MESSAGE, USER_NOT_EXIST);
                     return response;
                 }
             }
@@ -664,12 +807,31 @@ public class CmsServices {
             if (dataLoginUser.size() == 0) {
                 response.setStatus("401");
                 response.setSuccess(false);
-                response.setMessage("Failed to login. wrong User Name, Email, or Password");
+                response.setMessage(WRONG_USER_NAME_OR_PASSWORD);
+                cmsLogService.createNewLogEntry(user_name, "", "", "", USER_LOGIN, (new JSONObject().put("password", "").put("user_name", user_name)).toString(), FAILED_MESSAGE, WRONG_USER_NAME_OR_PASSWORD);
                 return response;
             }
 
             for (int i = 0; i < dataLoginUser.size(); i++) {
                 Users users = dataLoginUser.get(i);
+                OutputUsers outputUsers = new OutputUsers();
+                outputUsers.setUser_id(users.getUser_id());
+                outputUsers.setUser_name(users.getUser_name());
+                outputUsers.setRole_id(users.getRole_id());
+                outputUsers.setUser_email(users.getUser_email());
+                outputUsers.setUser_password("");
+                outputUsers.setStatus(users.getStatus());
+                outputUsers.setUser_full_name(users.getUser_full_name());
+                outputUsers.setUser_token(users.getUser_token());
+                outputUsers.setCreated_by(users.getCreated_by());
+                outputUsers.setCreated_date(users.getCreated_date());
+                outputUsers.setUpdated_by(users.getUpdated_by());
+                outputUsers.setUpdated_date(users.getUpdated_date());
+                outputUsers.setCompany_id(users.getCompany_id());
+                outputUsers.setRegion_id(users.getRegion_id());
+                outputUsers.setBranch_id(users.getBranch_id());
+
+
                 List<Role> roles = roleRepository.getRoleById(users.getRole_id());
                 List<Privilege> privileges = privilegeRepository.getPrivilegeByRoleId(roles.get(0).getRole_id());
                 List<String> menuNames = new ArrayList();
@@ -677,7 +839,7 @@ public class CmsServices {
                 menu_name = menu_name.replace("[", "").replace("]", "");
                 String[] menuArray = menu_name.split(",");
                 menuNames = Arrays.asList(menuArray);
-                result.put("User", users);
+                result.put("User", outputUsers);
                 result.put("Role", roles.get(0));
                 result.put("Privilege", menuNames);
                 if (users.getBranch_id() != 0) {
@@ -710,20 +872,22 @@ public class CmsServices {
 
             }
 
-            for (int i = 0; i < dataLoginUser.size(); i++) {
-                dataLoginUser.get(i).setUser_password("null");
-            }
+//            for (int i = 0; i < dataLoginUser.size(); i++) {
+//                dataLoginUser.get(i).setUser_password("null");
+//            }
 
 
             response.setData(result);
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage("Login Success !!");
+            cmsLogService.createNewLogEntry(user_name, "", "", "", USER_LOGIN, (new JSONObject().put("password", "").put("user_name", user_name)).toString(), SUCCESS_MESSAGE, "");
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(user_name, "", "", "", USER_LOGIN, (new JSONObject().put("password", "").put("user_name", user_name)).toString(), FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -914,6 +1078,10 @@ public class CmsServices {
         String company_phone;
         String company_email;
         String status;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -925,6 +1093,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             company_name = jsonInput.optString("company_name");
             company_address = jsonInput.optString("company_address");
             company_phone = jsonInput.optString("company_phone");
@@ -934,7 +1106,8 @@ public class CmsServices {
             if (company_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Company name can't be empty");
+                response.setMessage(COMPANY_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_COMPANY, input, FAILED_MESSAGE, COMPANY_NAME_NULL);
                 return response;
             }
 
@@ -943,7 +1116,8 @@ public class CmsServices {
             if (companyNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Company name already exist / used");
+                response.setMessage(COMPANY_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_COMPANY, input, FAILED_MESSAGE, COMPANY_NAME_EXIST);
                 return response;
             }
 
@@ -963,13 +1137,15 @@ public class CmsServices {
 
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Company successfully Added");
+            response.setMessage(COMPANY_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_CREATED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_COMPANY, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -1036,6 +1212,11 @@ public class CmsServices {
 
     public BaseResponse<Company> updateCompany(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String company_name = "";
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -1048,24 +1229,41 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
+            company_name = jsonInput.optString("company_name");
+
             //company name  check
-            List<Company> companyNameCheckResult = companyRepository.getCompanyByNameExceptId(jsonInput.optString("company_name"), jsonInput.optInt("company_id"));
+            if (company_name.isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(COMPANY_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_COMPANY, input, FAILED_MESSAGE, COMPANY_NAME_NULL);
+                return response;
+            }
+
+            List<Company> companyNameCheckResult = companyRepository.getCompanyByNameExceptId(company_name, jsonInput.optInt("company_id"));
             if (companyNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Company name already exist / used");
+                response.setMessage(COMPANY_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_COMPANY, input, FAILED_MESSAGE, COMPANY_NAME_EXIST);
                 return response;
             }
             companyRepository.updateCompany(jsonInput.optString("company_name"), jsonInput.optString("company_address"), jsonInput.optString("company_phone"),
                     jsonInput.optString("company_email"), jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("company_id"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Company successfully Updated");
+            response.setMessage(COMPANY_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_COMPANY, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -1074,6 +1272,10 @@ public class CmsServices {
 
     public BaseResponse<Company> deleteCompany(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -1086,25 +1288,31 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
             //Check region of company
             List<Region> usedCompanyOnRegion = regionRepository.getRegionByCompanyId(jsonInput.optInt("company_id"));
             if (usedCompanyOnRegion.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("The company still has " + usedCompanyOnRegion.size() + " region(s)");
+                response.setMessage(COMPANY_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_COMPANY, input, FAILED_MESSAGE, COMPANY_STILL_USED);
                 return response;
             }
 
             companyRepository.deleteCompany(jsonInput.optInt("company_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("User successfully deleted");
+            response.setMessage(COMPANY_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_COMPANY, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -1126,6 +1334,10 @@ public class CmsServices {
         BaseResponse response = new BaseResponse();
         String region_name;
         int company_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1137,6 +1349,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             region_name = jsonInput.optString("region_name");
             company_id = jsonInput.optInt("company_id");
 
@@ -1144,20 +1360,23 @@ public class CmsServices {
             if (jsonInput.optString("region_name").isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Region name can't be empty");
+                response.setMessage(REGION_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, FAILED_MESSAGE, REGION_NAME_NULL);
                 return response;
             }
             if (jsonInput.optInt("company_id") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Company can't be empty");
+                response.setMessage(REGION_COMPANY_IS_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, FAILED_MESSAGE, REGION_COMPANY_IS_NULL);
                 return response;
             }
             List<Region> regionNameCheckResult = regionRepository.getRegionByName(region_name, company_id);
             if (regionNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Region name already exist / used");
+                response.setMessage(REGION_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, FAILED_MESSAGE, REGION_NAME_EXIST);
                 return response;
             }
             //Save region object
@@ -1173,13 +1392,15 @@ public class CmsServices {
             regionRepository.save(regions);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Region successfully Added");
+            response.setMessage(REGION_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, SUCCESS_MESSAGE, REGION_CREATED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create Region : " + e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -1257,6 +1478,12 @@ public class CmsServices {
 
     public BaseResponse<Region> updateRegion(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
+        String region_name = "";
+        int company_id;
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -1269,30 +1496,55 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
+            region_name = jsonInput.optString("region_name");
+            company_id = jsonInput.optInt("company_id");
             //Region name  check
-            List<Region> regionNameCheckResult = regionRepository.getRegionByNameExceptId(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optInt("region_id"));
+            List<Region> regionNameCheckResult = regionRepository.getRegionByNameExceptId(region_name, company_id, jsonInput.optInt("region_id"));
             if (regionNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Region name already exist / used");
+                response.setMessage(REGION_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, FAILED_MESSAGE, REGION_NAME_EXIST);
                 return response;
             }
+            if (region_name.isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(REGION_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, FAILED_MESSAGE, REGION_NAME_NULL);
+                return response;
+            }
+            if (company_id == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(REGION_COMPANY_IS_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, FAILED_MESSAGE, REGION_COMPANY_IS_NULL);
+                return response;
+            }
+
             if (jsonInput.optString("status").toLowerCase().isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Status must be filled, can't be empty");
+                response.setMessage(STATUS_IS_EMPTY);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, FAILED_MESSAGE, STATUS_IS_EMPTY);
                 return response;
             }
-            regionRepository.updateRegion(jsonInput.optString("region_name"), jsonInput.optInt("company_id"), jsonInput.optString("status").toLowerCase(),
+            regionRepository.updateRegion(region_name, company_id, jsonInput.optString("status").toLowerCase(),
                     userOnProcess, jsonInput.optInt("region_id"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Region successfully Updated");
+            response.setMessage(REGION_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, SUCCESS_MESSAGE, REGION_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -1301,6 +1553,10 @@ public class CmsServices {
 
     public BaseResponse<Region> deleteRegion(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -1313,24 +1569,31 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
             //Check branch of region
             List<Branch> usedRegionOnBranch = branchRepository.getBranchByRegionId(jsonInput.optInt("region_id"));
             if (usedRegionOnBranch.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("The Region still has " + usedRegionOnBranch.size() + " branch(es)");
+                response.setMessage(REGION_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_REGION, input, FAILED_MESSAGE, REGION_STILL_USED);
                 return response;
             }
             regionRepository.deleteRegion(jsonInput.optInt("region_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Region successfully deleted");
+            response.setMessage(REGION_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_REGION, input, SUCCESS_MESSAGE, REGION_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_REGION, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -1353,6 +1616,10 @@ public class CmsServices {
         String branch_name;
         int region_id;
         int company_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1364,6 +1631,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             branch_name = jsonInput.optString("branch_name");
             region_id = jsonInput.optInt("region_id");
 //            company_id = jsonInput.optInt("company_id");
@@ -1372,19 +1643,22 @@ public class CmsServices {
             if (branch_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Branch name can't be empty");
+                response.setMessage(BRANCH_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, BRANCH_NAME_NULL);
                 return response;
             }
             if (jsonInput.optString("region_id").compareToIgnoreCase("all") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't select all, please select specific region");
+                response.setMessage(BRANCH_REGION_CANT_ALL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_CANT_ALL);
                 return response;
             }
             if (region_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Region can't be empty");
+                response.setMessage(BRANCH_REGION_IS_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_IS_NULL);
                 return response;
             }
 
@@ -1392,7 +1666,8 @@ public class CmsServices {
             if (regions.size() == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Region can't be found");
+                response.setMessage(BRANCH_REGION_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_NOT_FOUND);
                 return response;
             }
 
@@ -1402,7 +1677,8 @@ public class CmsServices {
             if (branchNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Branch name already exist / used");
+                response.setMessage(BRANCH_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, BRANCH_NAME_EXIST);
                 return response;
             }
             Branch branches = new Branch();
@@ -1418,13 +1694,14 @@ public class CmsServices {
             branchRepository.save(branches);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Branch successfully Added");
-
+            response.setMessage(BRANCH_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_CREATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -1511,7 +1788,12 @@ public class CmsServices {
 
     public BaseResponse<Branch> updateBranch(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
+        String branch_name = "";
+        int region_id;
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1523,26 +1805,66 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
+            branch_name = jsonInput.optString("branch_name");
+            region_id = jsonInput.optInt("region_id");
 
             //Branch name  check
-            List<Branch> branchNameCheckResult = branchRepository.getBranchByNameExceptId(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("branch_id"));
+            List<Branch> branchNameCheckResult = branchRepository.getBranchByNameExceptId(branch_name, jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("branch_id"));
             if (branchNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Branch name already exist / used");
+                response.setMessage(BRANCH_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, BRANCH_NAME_EXIST);
                 return response;
             }
+            if (branch_name.isEmpty()) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(BRANCH_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, BRANCH_NAME_NULL);
+                return response;
+            }
+            if (region_id + "".compareToIgnoreCase("all") == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(BRANCH_REGION_CANT_ALL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_CANT_ALL);
+                return response;
+            }
+            if (region_id == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(BRANCH_REGION_IS_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_IS_NULL);
+                return response;
+            }
+
+            List<Region> regions = regionRepository.getRegionById(region_id);
+            if (regions.size() == 0) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage(BRANCH_REGION_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, BRANCH_REGION_NOT_FOUND);
+                return response;
+            }
+
 
             branchRepository.updateBranch(jsonInput.optString("branch_name"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"),
                     jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("branch_id"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Branch successfully Updated");
+            response.setMessage(BRANCH_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -1551,6 +1873,10 @@ public class CmsServices {
 
     public BaseResponse<Branch> deleteBranch(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -1563,22 +1889,27 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
             //Check promo of branch
-            List<Promo> usedBranchOnPromo = promoRepository.getPromoByBranchId(jsonInput.optInt("branch_id"));
-            if (usedBranchOnPromo.size() > 0) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("The Branch still has " + usedBranchOnPromo.size() + " promo(s)");
-                return response;
-            }
+//            List<Promo> usedBranchOnPromo = promoRepository.getPromoByBranchId(jsonInput.optInt("branch_id"));
+//            if (usedBranchOnPromo.size() > 0) {
+//                response.setStatus("500");
+//                response.setSuccess(false);
+//                response.setMessage("The Branch still has " + usedBranchOnPromo.size() + " promo(s)");
+//                return response;
+//            }
 
             //Check playlist of branch
             List<Playlist> usedBranchOnPlaylist = playlistRepository.getPlaylistByBranchId(jsonInput.optInt("branch_id"));
             if (usedBranchOnPlaylist.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("The Branch still has " + usedBranchOnPlaylist.size() + " playlist(s)");
+                response.setMessage(BRANCH_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_BRANCH, input, FAILED_MESSAGE, BRANCH_STILL_USED);
                 return response;
             }
 
@@ -1586,12 +1917,14 @@ public class CmsServices {
             branchRepository.deleteBranch(jsonInput.optInt("branch_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Branch successfully deleted");
+            response.setMessage(BRANCH_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_BRANCH, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -1882,6 +2215,10 @@ public class CmsServices {
         int region_id;
         int branch_id;
         String device_name;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -1893,6 +2230,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             company_id = jsonInput.getInt("company_id");
             region_id = jsonInput.getInt("region_id");
             branch_id = jsonInput.getInt("branch_id");
@@ -1903,18 +2244,21 @@ public class CmsServices {
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Device name already exist / used");
+                response.setMessage(DEVICE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, FAILED_MESSAGE, DEVICE_NAME_EXIST);
                 return response;
             }
-            if (jsonInput.optString("device_name").isEmpty()) {
+            if (device_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Device name can't be empty");
+                response.setMessage(DEVICE_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, FAILED_MESSAGE, DEVICE_NAME_NULL);
                 return response;
             }
 
             List<Company> companyList = getCompanyById(company_id);
             if (companyList.size() == 0) {
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, FAILED_MESSAGE, DEVICE_COMPANY_NOT_FOUND);
                 return notFoundComponent("Company");
             }
             Device device = new Device();
@@ -1934,13 +2278,15 @@ public class CmsServices {
             deviceRepository.save(device);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Device successfully Added");
+            response.setMessage(DEVICE_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_CREATED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -2065,6 +2411,10 @@ public class CmsServices {
         String device_name;
         String status;
         int device_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2076,6 +2426,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             device_name = jsonInput.optString("device_name");
             status = jsonInput.optString("status").toLowerCase();
             device_id = jsonInput.optInt("device_id");
@@ -2084,13 +2438,15 @@ public class CmsServices {
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Device name already exist / used");
+                response.setMessage(DEVICE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_DEVICE, input, FAILED_MESSAGE, DEVICE_NAME_EXIST);
                 return response;
             }
-            if (jsonInput.optString("device_name").isEmpty()) {
+            if (device_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't update device name to empty");
+                response.setMessage(DEVICE_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_DEVICE, input, FAILED_MESSAGE, DEVICE_NAME_NULL);
                 return response;
             }
             if (jsonInput.optString("status").toLowerCase().isEmpty()) {
@@ -2102,12 +2458,14 @@ public class CmsServices {
             deviceRepository.updateDevice(device_name, status, userOnProcess, device_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Device successfully Updated");
+            response.setMessage(DEVICE_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_DEVICE, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -2116,7 +2474,10 @@ public class CmsServices {
 
     public BaseResponse<Device> deleteDevice(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2128,17 +2489,23 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
 
             deviceRepository.deleteDevice(jsonInput.optInt("device_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Device successfully deleted");
+            response.setMessage(DEVICE_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_DELETED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -2146,19 +2513,22 @@ public class CmsServices {
 
     public BaseResponse checkDeviceUniqueId(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String device_unique_id = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
-            String device_unique_id = jsonInput.getString("device_unique_id");
+            device_unique_id = jsonInput.getString("device_unique_id");
             List<Device> checkedDeviceList = deviceRepository.checkDeviceUniqueId(device_unique_id);
             if (checkedDeviceList.size() > 0) {
                 response.setData(checkedDeviceList.get(0).getDevice_id());
                 response.setStatus("200");
                 response.setSuccess(true);
-                response.setMessage("Device already registered");
+                response.setMessage(DEVICE_REGISTERED);
+                cmsLogService.createNewLogEntry(device_unique_id, "", "", "", CHECK_DEVICE_UNIQUE_ID, input, SUCCESS_MESSAGE, DEVICE_REGISTERED);
             } else {
                 response.setStatus("404");
                 response.setSuccess(false);
-                response.setMessage("device is not registered yet, please enter security code");
+                response.setMessage(DEVICE_NOT_REGISTERED);
+                cmsLogService.createNewLogEntry(device_unique_id, "", "", "", CHECK_DEVICE_UNIQUE_ID, input, FAILED_MESSAGE, DEVICE_NOT_REGISTERED);
             }
 
         } catch (Exception e) {
@@ -2166,22 +2536,26 @@ public class CmsServices {
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(device_unique_id, "", "", "", CHECK_DEVICE_UNIQUE_ID, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
 
     public BaseResponse authLicenseKeyAndDeviceUniqueId(String input) throws Exception {
         BaseResponse response = new BaseResponse();
+        String license_key = "";
+        String device_unique_id = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
-            String license_key = cmsEncryptDecrypt.encrypt(jsonInput.getString("license_key").getBytes());
-            String device_unique_id = jsonInput.getString("device_unique_id");
+            license_key = cmsEncryptDecrypt.encrypt(jsonInput.getString("license_key").getBytes());
+            device_unique_id = jsonInput.getString("device_unique_id");
 
             List<Device> checkValidCountLicense = deviceRepository.checkLicenseKeyCount(license_key);
             if (checkValidCountLicense.size() > 1) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Cannot use the license, multiple device found with this license");
+                response.setMessage(LICENSE_USED_ON_MULTIPLE_DEVICE);
+                cmsLogService.createNewLogEntry(device_unique_id, "", "", "", DEVICE_LICENSE_AUTHENTICATION, input, FAILED_MESSAGE, LICENSE_USED_ON_MULTIPLE_DEVICE);
                 return response;
             }
 
@@ -2191,19 +2565,22 @@ public class CmsServices {
             } else {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Wrong license key or license key already used");
+                response.setMessage(LICENSE_INVALID);
+                cmsLogService.createNewLogEntry(device_unique_id, "", "", "", DEVICE_LICENSE_AUTHENTICATION, input, FAILED_MESSAGE, LICENSE_INVALID);
                 return response;
             }
             response.setData(checkedLicenseKey.get(0).getDevice_id());
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Device successfully registered");
+            response.setMessage(DEVICE_AUTHENTICATED_REGISTERED);
+            cmsLogService.createNewLogEntry(device_unique_id, "", "", "", DEVICE_LICENSE_AUTHENTICATION, input, SUCCESS_MESSAGE, DEVICE_AUTHENTICATED_REGISTERED);
 
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed to check license key :" + e.getMessage());
+            cmsLogService.createNewLogEntry(device_unique_id, "", "", "", DEVICE_LICENSE_AUTHENTICATION, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -2220,6 +2597,7 @@ public class CmsServices {
         return getDeviceResult;
     }
 
+
     //POSITION SECTION
     public BaseResponse<String> addNewPosition(String input) throws Exception {
         BaseResponse response = new BaseResponse();
@@ -2230,6 +2608,10 @@ public class CmsServices {
         String width;
         String height;
         String measurement;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2241,11 +2623,16 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             profile_id = jsonInput.optInt("profile_id");
             if (profile_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Please select exisitng profile");
+                response.setMessage(PROFILE_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_POSITION, input, FAILED_MESSAGE, PROFILE_NOT_FOUND);
                 return response;
             }
             box = jsonInput.optString("box");
@@ -2271,13 +2658,15 @@ public class CmsServices {
             positionRepository.save(position);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Position successfully Added");
+            response.setMessage(POSITION_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_POSITION, input, SUCCESS_MESSAGE, POSITION_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_POSITION, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -2350,7 +2739,7 @@ public class CmsServices {
                 company_id = "%%";
             }
 
-            List<Integer> profile_id_list = profileRepository.getProfileIdListForUserLogin(branch_id, region_id, company_id);
+            List<Integer> profile_id_list = profileRepository.getProfileIdCountForUserLogin(branch_id, region_id, company_id);
             List<Position> getPositionResult = positionRepository.getPositionList(profile_id, box, x_pos, y_pos, width, height, measurement, status, created_by, created_date, updated_by, updated_date, profile_id_list);
 
             for (int i = 0; i < getPositionResult.size(); i++) {
@@ -2387,6 +2776,10 @@ public class CmsServices {
         String measurement;
         String status;
         int position_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2398,6 +2791,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             box = jsonInput.optString("box");
             x_pos = jsonInput.optString("x_pos");
             y_pos = jsonInput.optString("y_pos");
@@ -2411,19 +2808,22 @@ public class CmsServices {
             if (positionList.size() == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Cant' find position with id :" + position_id);
+                response.setMessage(POSITION_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_POSITION, input, FAILED_MESSAGE, POSITION_NOT_FOUND);
                 return response;
             }
 
             positionRepository.updatePosition(box, x_pos, y_pos, width, height, status, measurement, userOnProcess, position_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Position successfully Updated");
+            response.setMessage(POSITION_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_POSITION, input, SUCCESS_MESSAGE, POSITION_UPDATED);
         } catch (Exception e) {
             logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_POSITION, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -2433,6 +2833,10 @@ public class CmsServices {
     public BaseResponse<Position> deletePosition(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
         int position_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2444,6 +2848,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             position_id = jsonInput.optInt("position_id");
             List<Position> positions = positionRepository.getPositionById(position_id);
 
@@ -2452,26 +2860,30 @@ public class CmsServices {
             if (usedPositionOnProfile.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Position still used on  active profile(s)");
+                response.setMessage(POSITION_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_POSITION, input, SUCCESS_MESSAGE, POSITION_STILL_USED);
                 return response;
             }
             List<Position> positionList = getPositionById(position_id);
             if (positionList.size() == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Cant' find position with id :" + position_id);
+                response.setMessage(POSITION_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_POSITION, input, FAILED_MESSAGE, POSITION_NOT_FOUND);
                 return response;
             }
 
             positionRepository.deletePosition(jsonInput.optInt("position_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Position successfully deleted");
+            response.setMessage(POSITION_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_POSITION, input, SUCCESS_MESSAGE, POSITION_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_POSITION, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -2495,6 +2907,10 @@ public class CmsServices {
         String url_resource;
         int duration;
         String stretch;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -2506,6 +2922,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             company_id = jsonInput.getInt("company_id");
             region_id = jsonInput.getInt("region_id");
             branch_id = jsonInput.getInt("branch_id");
@@ -2516,11 +2936,25 @@ public class CmsServices {
             duration = jsonInput.optInt("duration");
             stretch = jsonInput.optString("stretch");
 
+            OutputResource outputResource = new OutputResource();
+            outputResource.setCompany_id(company_id);
+            outputResource.setRegion_id(region_id);
+            outputResource.setBranch_id(branch_id);
+            outputResource.setResource_name(resource_name);
+            outputResource.setType(type);
+            outputResource.setFile("");
+            outputResource.setUrl_resource(url_resource);
+            outputResource.setDuration(duration);
+            outputResource.setStretch(stretch);
+            String JsonString = gson.toJson(outputResource);
+            JSONObject log = new JSONObject(JsonString);
+
 
             if (resource_name.isEmpty()) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Resource name can't be empty");
+                response.setMessage(RESOURCE_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RESOURCE, log.toString(), FAILED_MESSAGE, RESOURCE_NAME_NULL);
                 return response;
             }
 
@@ -2529,7 +2963,8 @@ public class CmsServices {
             if (resourceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Resource name already exist / used");
+                response.setMessage(REGION_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RESOURCE, log.toString(), FAILED_MESSAGE, RESOURCE_NAME_EXIST);
                 return response;
             }
 
@@ -2589,13 +3024,15 @@ public class CmsServices {
             resourceRepository.save(resources);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Resource successfully Added");
+            response.setMessage(RESOURCE_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RESOURCE, log.toString(), SUCCESS_MESSAGE, RESOURCE_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RESOURCE, new JSONObject().toString(), FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -2751,6 +3188,8 @@ public class CmsServices {
             }
             result.put("resourceData", dataList);
             result.put("maxPage", maxPage);
+            result.put("page", offset);
+            result.put("items_per_page", limit);
 
             response.setData(result);
             response.setStatus("200");
@@ -2847,6 +3286,10 @@ public class CmsServices {
 
     public BaseResponse<Resource> updateResource(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -2859,12 +3302,17 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             //Resource name  check
             List<Resource> resourceNameCheckResult = resourceRepository.getResourceByNameExceptId(jsonInput.optString("resource_name"), jsonInput.optInt("resource_id"));
             if (resourceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Resource name already exist / used");
+                response.setMessage(RESOURCE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RESOURCE, (new JSONObject(input).put("file", "")).toString(), FAILED_MESSAGE, RESOURCE_NAME_EXIST);
                 return response;
             }
             String file = jsonInput.optString("file");
@@ -2878,12 +3326,15 @@ public class CmsServices {
                     jsonInput.optInt("duration"), jsonInput.optString("stretch"), jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("resource_id"), jsonInput.optString("url_resource"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Resource successfully Updated");
+            response.setMessage(RESOURCE_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RESOURCE, (new JSONObject(input).put("file", "")).toString(), SUCCESS_MESSAGE, RESOURCE_UPDATED);
+
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RESOURCE, (new JSONObject(input).put("file", "")).toString(), FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -2892,6 +3343,10 @@ public class CmsServices {
 
     public BaseResponse<Resource> deleteResource(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -2904,25 +3359,33 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
             //Check playlist use this resource
             List<PlaylistResource> usedResourceOnPlaylist = playlistResourceRepository.getPlaylistResourceByResourceId(jsonInput.optInt("resource_id"));
             if (usedResourceOnPlaylist.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Resource still used on " + usedResourceOnPlaylist.size() + " playlist(s)");
+                response.setMessage(RESOURCE_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_RESOURCE, input, FAILED_MESSAGE, RESOURCE_STILL_USED);
                 return response;
             }
 
             resourceRepository.deleteResource(jsonInput.optInt("resource_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Resource successfully deleted");
+            response.setMessage(RESOURCE_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_RESOURCE, input, SUCCESS_MESSAGE, RESOURCE_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_RESOURCE, input, FAILED_MESSAGE, e.getMessage());
+
         }
         return response;
     }
@@ -2952,6 +3415,10 @@ public class CmsServices {
         String end_date;
         JSONArray position_list;
         String user_token;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             user_token = jsonInput.optString("user_token");
@@ -2964,6 +3431,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             playlist_name = jsonInput.optString("playlist_name");
             branch_id = jsonInput.optInt("branch_id");
             region_id = jsonInput.optInt("region_id");
@@ -2977,7 +3448,8 @@ public class CmsServices {
             if (playlistNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't create playlist : Playlist name already exist / used");
+                response.setMessage(PLAYLIST_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_NAME_EXIST);
                 return response;
             }
 
@@ -2985,7 +3457,8 @@ public class CmsServices {
             if (checkAddNewPlaylistAvailability.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't create playlist : Playlist already exist for that period of time (select another start date /end date)");
+                response.setMessage(PLAYLIST_EXIST_ON_PERIOD);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_EXIST_ON_PERIOD);
                 return response;
             }
 
@@ -3006,7 +3479,8 @@ public class CmsServices {
             if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Is default is empty, Playlist must define as default or not");
+                response.setMessage(PLAYLIST_DEFAULT_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_DEFAULT_NULL);
                 return response;
             } else {
                 is_default = Boolean.valueOf(is_defaultStr);
@@ -3017,7 +3491,8 @@ public class CmsServices {
                 if (playlistListCheckDefaultList.size() > 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
-                    response.setMessage("Can't create playlist : default playlist already exist for this profile");
+                    response.setMessage(PLAYLIST_DEFAULT_EXIST);
+                    cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_DEFAULT_EXIST);
                     return response;
                 }
             }
@@ -3063,13 +3538,15 @@ public class CmsServices {
             }
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Playlist successfully Added");
+            response.setMessage(PLAYLIST_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, SUCCESS_MESSAGE, PLAYLIST_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Can't create playlist : " + e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PLAYLIST, input, FAILED_MESSAGE, e.getMessage());
         }
 
         return response;
@@ -3225,6 +3702,10 @@ public class CmsServices {
         int region_id;
         int company_id;
         boolean is_default;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -3236,6 +3717,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             playlist_name = jsonInput.optString("playlist_name");
             start_date = jsonInput.optString("start_date");
             end_date = jsonInput.optString("end_date");
@@ -3254,7 +3739,8 @@ public class CmsServices {
             } else {
                 response.setStatus("404");
                 response.setSuccess(false);
-                response.setMessage("Can't update playlist : profile for this playlist not found");
+                response.setMessage(PLAYLIST_PROFILE_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_PROFILE_NOT_FOUND);
                 return response;
             }
 
@@ -3262,7 +3748,8 @@ public class CmsServices {
             if (checkAddNewPlaylistAvailability.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't update playlist : Playlist already exist for that period of time (select another start date /end date)");
+                response.setMessage(PLAYLIST_EXIST_ON_PERIOD);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_EXIST_ON_PERIOD);
                 return response;
             }
 
@@ -3272,7 +3759,8 @@ public class CmsServices {
             if (playlistNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Can't update playlist  : Playlist name already exist / used");
+                response.setMessage(PLAYLIST_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_NAME_EXIST);
                 return response;
             }
 
@@ -3281,7 +3769,8 @@ public class CmsServices {
             if (is_defaultStr.isEmpty() || is_defaultStr.compareToIgnoreCase("null") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Is default is empty, Playlist must define as default or not");
+                response.setMessage(PLAYLIST_DEFAULT_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_DEFAULT_NULL);
                 return response;
             } else {
                 is_default = Boolean.valueOf(is_defaultStr);
@@ -3291,7 +3780,8 @@ public class CmsServices {
                 if (playlistListCheckDefaultList.size() > 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
-                    response.setMessage("Can't create playlist : default playlist already exist for this profile");
+                    response.setMessage(PLAYLIST_DEFAULT_EXIST);
+                    cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, PLAYLIST_DEFAULT_EXIST);
                     return response;
                 }
             }
@@ -3301,12 +3791,14 @@ public class CmsServices {
                     userOnProcess, playlist_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Playlist successfully Updated");
+            response.setMessage(PLAYLIST_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, SUCCESS_MESSAGE, PLAYLIST_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PLAYLIST, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -3315,7 +3807,10 @@ public class CmsServices {
 
     public BaseResponse<Playlist> deletePlaylist(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -3327,15 +3822,21 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             playlistRepository.deletePlaylist(jsonInput.optInt("playlist_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Playlist successfully deleted");
+            response.setMessage(PLAYLIST_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_PLAYLIST, input, SUCCESS_MESSAGE, PLAYLIST_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_PLAYLIST, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -3431,7 +3932,7 @@ public class CmsServices {
                                 String imagePrefix = pptImageList.get(0).split("\\(")[0];
                                 for (String s : pptImageList) {
                                     String imageNumberWithExtension = s.split("\\(")[1];
-                                    int imageNumber = Integer.valueOf(imageNumberWithExtension.replace(".jpg", "").replace("(","").replace(")",""));
+                                    int imageNumber = Integer.valueOf(imageNumberWithExtension.replace(".jpg", "").replace("(", "").replace(")", ""));
                                     imageNumberList.add(imageNumber);
 
                                 }
@@ -3850,6 +4351,10 @@ public class CmsServices {
         String end_date;
         String tittle;
         String description;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -3863,6 +4368,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             tittle = jsonInput.optString("tittle");
             description = jsonInput.optString("description");
             running_text = jsonInput.optString("running_text");
@@ -3877,13 +4386,15 @@ public class CmsServices {
             if (runningTextTittleCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("RunningText Tittle already exist / used");
+                response.setMessage(RUNNING_TEXT_TITTLE_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RUNNING_TEXT, input, FAILED_MESSAGE, RUNNING_TEXT_TITTLE_EXIST);
                 return response;
             }
             if (company_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Unknown company, please choose existing company.");
+                response.setMessage(COMPANY_UNKNOWN);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RUNNING_TEXT, input, FAILED_MESSAGE, COMPANY_UNKNOWN);
                 return response;
             }
 
@@ -3907,13 +4418,16 @@ public class CmsServices {
 //                    running_text, start_date, end_date, userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("RunningText successfully Added");
+            response.setMessage(RUNNING_TEXT_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RUNNING_TEXT, input, SUCCESS_MESSAGE, RUNNING_TEXT_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RUNNING_TEXT, input, FAILED_MESSAGE, e.getMessage());
+
         }
 
         return response;
@@ -4074,7 +4588,10 @@ public class CmsServices {
 
     public BaseResponse<RunningText> updateRunningText(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
-
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -4086,18 +4603,24 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             //RunningText tittle  check
             List<RunningText> running_textTittleCheckResult = runningTextRepository.getRunningTextByTittleExceptId(jsonInput.optString("tittle"), jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optInt("running_text_id"));
             if (running_textTittleCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("RunningText Tittle already exist / used");
+                response.setMessage(RUNNING_TEXT_TITTLE_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RUNNING_TEXT, input, FAILED_MESSAGE, RUNNING_TEXT_TITTLE_EXIST);
                 return response;
             }
             if (jsonInput.optInt("company_id") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Unknown company, please choose existing company.");
+                response.setMessage(COMPANY_UNKNOWN);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RUNNING_TEXT, input, FAILED_MESSAGE, COMPANY_UNKNOWN);
                 return response;
             }
             runningTextRepository.updateRunningText(jsonInput.optInt("branch_id"), jsonInput.optInt("region_id"), jsonInput.optInt("company_id"), jsonInput.optString("tittle"), jsonInput.optString("description"),
@@ -4105,12 +4628,14 @@ public class CmsServices {
                     jsonInput.optString("status").toLowerCase(), userOnProcess, jsonInput.optInt("running_text_id"));
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("RunningText successfully Updated");
+            response.setMessage(RUNNING_TEXT_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RUNNING_TEXT, input, SUCCESS_MESSAGE, RUNNING_TEXT_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_RUNNING_TEXT, input, FAILED_MESSAGE, e.getMessage());
         }
 
 
@@ -4119,6 +4644,10 @@ public class CmsServices {
 
     public BaseResponse<RunningText> deleteRunningText(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -4131,15 +4660,22 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             runningTextRepository.deleteRunningText(jsonInput.optInt("running_text_id"), userOnProcess);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("RunningText successfully deleted");
+            response.setMessage(RUNNING_TEXT_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_RUNNING_TEXT, input, SUCCESS_MESSAGE, RUNNING_TEXT_DELETED);
+
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_RUNNING_TEXT, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -4205,6 +4741,8 @@ public class CmsServices {
         Map<String, Object> result = new HashMap<>();
         String userToken;
         int device_id;
+        String log_start_date;
+        String log_end_date;
         int limit = 0;
         int offset = 0;
         int startingData = 0;
@@ -4224,8 +4762,21 @@ public class CmsServices {
             device_id = jsonInput.optInt("device_id");
             limit = jsonInput.getInt("limit");
             offset = jsonInput.getInt("offset");
+            log_start_date = jsonInput.optString("log_start_date");
+            if (log_start_date.isEmpty()) log_start_date = null;
+            log_end_date = jsonInput.optString("log_end_date");
+            if (log_end_date.isEmpty()) log_end_date = null;
             startingData = (offset - 1) * limit;
-            logList = deviceMonitoringLogRepository.getDeviceMonitoringLogList(device_id);
+
+
+            if (log_start_date == null || log_end_date == null) {
+                logList = deviceMonitoringLogRepository.getDeviceMonitoringLogList(device_id);
+                logger.info("no date filter on device monitoring log");
+            } else {
+                logList = deviceMonitoringLogRepository.getDeviceMonitoringLogListWithDate(device_id, log_start_date, log_end_date);
+                logger.info("with date filter on device monitoring log");
+            }
+
             int maxPage = (int) Math.ceil(logList.size() / (limit * 1.0));
             if (logList.size() > 0) {
                 logListPaged = logList.subList(startingData, Math.min((startingData + limit), logList.size()));
@@ -4241,6 +4792,8 @@ public class CmsServices {
             }
             result.put("logData", logListPaged);
             result.put("maxPage", maxPage);
+            result.put("page", offset);
+            result.put("items_per_page", limit);
 
             response.setData(result);
             response.setStatus("200");
@@ -4464,17 +5017,21 @@ public class CmsServices {
         try {
             usersList = usersRepository.tokenAuth(token);
             if (usersList.size() > 0) {
+                Users users = usersList.get(0);
                 result.put("valid", true);
-                result.put("user_name", usersList.get(0).getUser_name());
-                result.put("company_id", usersList.get(0).getCompany_id());
-                result.put("region_id", usersList.get(0).getRegion_id());
-                result.put("branch_id", usersList.get(0).getBranch_id());
+                result.put("user_id", users.getUser_id());
+                result.put("user_name", users.getUser_name());
+                result.put("company_id", users.getCompany_id());
+                result.put("region_id", users.getRegion_id());
+                result.put("branch_id", users.getBranch_id());
             } else {
                 result.put("valid", false);
+                result.put("user_id", null);
                 result.put("user_name", "");
                 result.put("company_id", "");
                 result.put("region_id", "");
                 result.put("branch_id", "");
+                cmsLogService.createNewLogEntry("Token : " + token, "", "", "", TOKEN_AUTHENTICATION, new JSONObject().toString(), FAILED_MESSAGE, TOKEN_AUTHENTICATION_FAILED);
             }
 
         } catch (Exception e) {
@@ -4957,6 +5514,10 @@ public class CmsServices {
         Date created_date;
         String updated_by;
         Date updated_date;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
         try {
             JSONObject jsonInput = new JSONObject(input);
             Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
@@ -4968,6 +5529,10 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
 
             company_id = jsonInput.getInt("company_id");
             region_id = jsonInput.getInt("region_id");
@@ -4976,7 +5541,8 @@ public class CmsServices {
             if (profile_name.isEmpty()) {
                 response.setSuccess(false);
                 response.setStatus("500");
-                response.setMessage("Profile name can't be empty");
+                response.setMessage(PROFILE_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PROFILE, input, FAILED_MESSAGE, PROFILE_NAME_NULL);
                 return response;
             }
             description = jsonInput.optString("description");
@@ -4987,14 +5553,16 @@ public class CmsServices {
             if (profileNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Profile name already exist / used");
+                response.setMessage(PROFILE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PROFILE, input, FAILED_MESSAGE, PROFILE_NAME_EXIST);
                 return response;
             }
 
             if (jsonInput.optInt("company_id") == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Unknown company, please choose existing company.");
+                response.setMessage(COMPANY_UNKNOWN);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PROFILE, input, FAILED_MESSAGE, COMPANY_UNKNOWN);
                 return response;
             }
             Profile profile = new Profile();
@@ -5014,15 +5582,17 @@ public class CmsServices {
 
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Profile successfully Added");
-            logger.info("Profile successfully Added");
+            response.setMessage(PROFILE_CREATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PROFILE, input, SUCCESS_MESSAGE, PROFILE_CREATED);
+//            logger.info("Profile successfully Added");
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create profile : " + e.getMessage());
-            logger.info("Failed create profile : {}", e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_PROFILE, input, FAILED_MESSAGE, e.getMessage());
+//            logger.info("Failed create profile : {}", e.getMessage());
         }
 
         return response;
@@ -5133,6 +5703,91 @@ public class CmsServices {
         return response;
     }
 
+    public BaseResponse<List<Map<String, Object>>> getProfileForDevice(String input) throws Exception, SQLException {
+        BaseResponse response = new BaseResponse<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        JSONObject jsonInput;
+        String branch_id;
+        String region_id;
+        String company_id;
+        try {
+            jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            branch_id = jsonInput.optInt("branch_id") + "";
+            if (branch_id.isEmpty() || branch_id.compareToIgnoreCase("null") == 0 || branch_id.compareToIgnoreCase("0") == 0) {
+                branch_id = "%%";
+            }
+            region_id = jsonInput.optInt("region_id") + "";
+            if (region_id.isEmpty() || region_id.compareToIgnoreCase("null") == 0 || region_id.compareToIgnoreCase("0") == 0) {
+                region_id = "%%";
+            }
+            company_id = jsonInput.optInt("company_id") + "";
+            if (company_id.isEmpty() || company_id.compareToIgnoreCase("null") == 0 || company_id.compareToIgnoreCase("0") == 0) {
+                company_id = "%%";
+            }
+
+            List<Profile> getProfileResult = profileRepository.getProfileIdListForUserLogin(branch_id, region_id, company_id);
+
+            for (int i = 0; i < getProfileResult.size(); i++) {
+                Profile profile = getProfileResult.get(i);
+                List<Position> positionList = positionRepository.getPositionByProfileId(profile.getProfile_id());
+                if (positionList.size() == 0) continue;
+                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(profile.getProfile_id());
+                if (playlistList.size() == 0) continue;
+
+                Map resultMap = new HashMap();
+                if (profile.getBranch_id() != 0) {
+                    List<Branch> branch = branchRepository.getBranchById(profile.getBranch_id());
+                    resultMap.put("branch", branch.get(0));
+                } else {
+                    Branch branch = new Branch();
+                    branch.setBranch_id(0);
+                    branch.setBranch_name("All Branches");
+                    resultMap.put("branch", branch);
+                }
+                if (profile.getRegion_id() != 0) {
+                    List<Region> regions = regionRepository.getRegionById(getProfileResult.get(i).getRegion_id());
+                    resultMap.put("region", regions.get(0));
+                } else {
+                    Region region = new Region();
+                    region.setRegion_id(0);
+                    region.setRegion_name("All Regions");
+                    resultMap.put("region", region);
+                }
+                if (profile.getCompany_id() != 0) {
+                    List<Company> companies = companyRepository.getCompanyById(getProfileResult.get(i).getCompany_id());
+                    resultMap.put("company", companies.get(0));
+                } else {
+                    resultMap.put("company", "All Companies");
+                }
+
+                resultMap.put("positions", positionList);
+                resultMap.put("profile", getProfileResult.get(i));
+
+                result.add(resultMap);
+            }
+
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Profile Listed");
+        } catch (Exception e) {
+            logger.info("Failed : " + e.getMessage());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
+
     public BaseResponse<Profile> updateProfile(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
         int profile_id;
@@ -5142,6 +5797,10 @@ public class CmsServices {
         int region_id = 0;
         int branch_id = 0;
         String status_profile;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -5154,13 +5813,19 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             profile_id = jsonInput.getInt("profile_id");
             profile_name = jsonInput.optString("profile_name");
             status_profile = jsonInput.getString("status_profile");
             if (profile_name.isEmpty()) {
                 response.setSuccess(false);
                 response.setStatus("500");
-                response.setMessage("Profile name can't be empty");
+                response.setMessage(PROFILE_NAME_NULL);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, FAILED_MESSAGE, PROFILE_NAME_NULL);
                 return response;
             }
             description = jsonInput.optString("description");
@@ -5172,7 +5837,8 @@ public class CmsServices {
             } else {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Profile with id " + profile_id + " not found");
+                response.setMessage(PROFILE_NOT_FOUND);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, FAILED_MESSAGE, PROFILE_NOT_FOUND);
                 return response;
             }
 
@@ -5181,24 +5847,29 @@ public class CmsServices {
             if (profileNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Profile name already exist / used");
+                response.setMessage(PROFILE_NAME_EXIST);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, FAILED_MESSAGE, PROFILE_NAME_EXIST);
                 return response;
             }
             if (company_id == 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Unknown company, please choose existing company.");
+                response.setMessage(COMPANY_UNKNOWN);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, FAILED_MESSAGE, COMPANY_UNKNOWN);
                 return response;
             }
             profileRepository.updateProfile(profile_name, description, status_profile, userOnProcess, profile_id);
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Profile successfully Updated");
+            response.setMessage(PROFILE_UPDATED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, SUCCESS_MESSAGE, PROFILE_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PROFILE, input, FAILED_MESSAGE, e.getMessage());
+
         }
 
 
@@ -5208,6 +5879,10 @@ public class CmsServices {
     public BaseResponse<Profile> deleteProfile(String input) throws Exception, SQLException {
         BaseResponse response = new BaseResponse();
         int profile_id;
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
 
         try {
             JSONObject jsonInput = new JSONObject(input);
@@ -5220,23 +5895,30 @@ public class CmsServices {
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            authRegion = auth.get("region_id").toString();
+            authBranch = auth.get("branch_id").toString();
             profile_id = jsonInput.getInt("profile_id");
             profileRepository.deleteProfile(profile_id, userOnProcess);
             List<Position> profilePosition = positionRepository.getPositionByProfileId(profile_id);
             if (profilePosition.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage("Profile still has " + profilePosition.size() + " position(s)");
+                response.setMessage(PROFILE_STILL_USED);
+                cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_PROFILE, input, FAILED_MESSAGE, PROFILE_STILL_USED);
                 return response;
             }
             response.setStatus("200");
             response.setSuccess(true);
-            response.setMessage("Profile successfully deleted");
+            response.setMessage(PROFILE_DELETED);
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_PROFILE, input, SUCCESS_MESSAGE, PROFILE_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+//            logger.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_PROFILE, input, FAILED_MESSAGE, e.getMessage());
         }
         return response;
     }
@@ -5272,6 +5954,85 @@ public class CmsServices {
 //    }
 
     //SCHEDULER SECTION
+
+    //LOGGER SECTION
+    public BaseResponse getAuditrailList(String input) throws Exception {
+        BaseResponse response = new BaseResponse();
+        Map<String, Object> result = new HashMap<>();
+        String authName = "";
+        String authCompany = "";
+        String authRegion = "";
+        String authBranch = "";
+        int limit = 0;
+        int offset = 0;
+        int startingData = 0;
+        String start_date;
+        String end_date;
+        String user_name;
+        List<CmsLog> cmsLogList = new ArrayList<>();
+        List<CmsLog> cmsLogListPaged = new ArrayList<>();
+        try {
+            JSONObject jsonInput = new JSONObject(input);
+            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+
+            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+                response.setStatus("500");
+                response.setSuccess(false);
+                response.setMessage("Token Authentication Failed");
+                return response;
+            }
+            String userOnProcess = auth.get("user_name").toString();
+            authName = userOnProcess;
+            authCompany = auth.get("company_id").toString();
+            if (authCompany.compareToIgnoreCase("0") == 0) authCompany = "%%";
+            authRegion = auth.get("region_id").toString();
+            if (authRegion.compareToIgnoreCase("0") == 0) authRegion = "%%";
+            authBranch = auth.get("branch_id").toString();
+            if (authBranch.compareToIgnoreCase("0") == 0) authBranch = "%%";
+
+            start_date = jsonInput.optString("start_date");
+            if (start_date.isEmpty()) start_date = null;
+            end_date = jsonInput.optString("end_date");
+            if (end_date.isEmpty()) end_date = null;
+            user_name = jsonInput.optString("user_name");
+            if (user_name.isEmpty()) user_name = "%%";
+
+            if (start_date == null || end_date == null) {
+                cmsLogList = cmsLogRepository.getCmsLogListWithNoDate(user_name, authCompany, authRegion, authBranch);
+            } else {
+                cmsLogList = cmsLogRepository.getCmsLogListWithDate(user_name, authCompany, authRegion, authBranch, start_date, end_date);
+            }
+
+            limit = jsonInput.getInt("limit");
+            offset = jsonInput.getInt("offset");
+            startingData = (offset - 1) * limit;
+
+            int maxPage = (int) Math.ceil(cmsLogList.size() / (limit * 1.0));
+            if (cmsLogList.size() > 0) {
+                cmsLogListPaged = cmsLogList.subList(startingData, Math.min((startingData + limit), cmsLogList.size()));
+            }
+
+            result.put("logData", cmsLogListPaged);
+            result.put("maxPage", maxPage);
+            result.put("page", offset);
+            result.put("items_per_page", limit);
+
+            response.setData(result);
+            response.setStatus("200");
+            response.setSuccess(true);
+            response.setMessage("Cms log listed");
+
+
+        } catch (Exception e) {
+            response.setData(new ArrayList<>());
+            response.setStatus("500");
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+
+
+        return response;
+    }
 
     //CONFIGURATION SECTION
     public BaseResponse addConfig(String input) throws Exception {

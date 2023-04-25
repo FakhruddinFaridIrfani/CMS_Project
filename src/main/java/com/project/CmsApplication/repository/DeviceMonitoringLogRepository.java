@@ -16,8 +16,17 @@ import java.util.List;
 public interface DeviceMonitoringLogRepository extends JpaRepository<DeviceMonitoringLog, Integer> {
 
     @Query(value = "SELECT * from cms_2.device_monitoring_log WHERE " +
-            "device_id=:device_id ORDER BY created_date DESC", nativeQuery = true)
+            "device_id=:device_id " +
+            "ORDER BY created_date DESC", nativeQuery = true)
     List<DeviceMonitoringLog> getDeviceMonitoringLogList(@Param("device_id") int device_id);
+
+    @Query(value = "SELECT * from cms_2.device_monitoring_log WHERE " +
+            "device_id=:device_id " +
+            "AND " +
+            "case when :log_start_date is NULL AND :log_end_date is NULL then created_date IS NOT NULL else CAST(created_date AS DATE) BETWEEN CAST(:log_start_date AS DATE) AND CAST (:log_end_date AS DATE) end " +
+            "ORDER BY created_date DESC", nativeQuery = true)
+    List<DeviceMonitoringLog> getDeviceMonitoringLogListWithDate(@Param("device_id") int device_id,@Param("log_start_date") String log_start_date,
+                                                         @Param("log_end_date")String log_end_date);
 
 
 }

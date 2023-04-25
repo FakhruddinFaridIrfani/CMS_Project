@@ -29,6 +29,11 @@ public class ProfileController {
         logger.info(new Date().getTime() + " : Get Profile List - " + input);
         return cmsServices.getProfileList(input);
     }
+    @PostMapping("/getProfileForDevice")
+    public BaseResponse<List<Map<String, Object>>> getProfileForDevice(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : Get Profile List For Device - " + input);
+        return cmsServices.getProfileForDevice(input);
+    }
 
     @PostMapping("/addNewProfile")
     public BaseResponse<String> addNewProfile(@RequestBody String input) throws Exception, SQLException, ParseException {
