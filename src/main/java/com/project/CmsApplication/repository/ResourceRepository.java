@@ -52,11 +52,16 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
     @Query(value = "SELECT * from cms_2.Resource WHERE resource_id =:resource_id", nativeQuery = true)
     List<Resource> getResourceById(@Param("resource_id") int resource_id);
 
-    @Query(value = "SELECT * from cms_2.Resource WHERE lower(resource_name) = lower(:resource_name) AND status not in ('deleted')", nativeQuery = true)
-    List<Resource> getResourceByName(@Param("resource_name") String resource_name);
+    @Query(value = "SELECT * from cms_2.Resource WHERE lower(resource_name) = lower(:resource_name) AND status not in ('deleted') AND company_id = :company_id AND region_id = :region_id AND branch_id = :branch_id", nativeQuery = true)
+    List<Resource> getResourceByName(@Param("resource_name") String resource_name,
+                                     @Param("branch_id") int branch_id,
+                                     @Param("region_id") int region_id,
+                                     @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * from cms_2.Resource WHERE lower(resource_name) = lower(:resource_name) AND resource_id not in (:resource_id) AND status not in ('deleted')", nativeQuery = true)
-    List<Resource> getResourceByNameExceptId(@Param("resource_name") String resource_name, @Param("resource_id") int resource_id);
+    @Query(value = "SELECT * from cms_2.Resource WHERE lower(resource_name) = lower(:resource_name) AND resource_id not in (:resource_id) AND status not in ('deleted') AND company_id = :company_id AND region_id = :region_id AND branch_id = :branch_id ", nativeQuery = true)
+    List<Resource> getResourceByNameExceptId(@Param("resource_name") String resource_name, @Param("resource_id") int resource_id,@Param("branch_id") int branch_id,
+                                             @Param("region_id") int region_id,
+                                             @Param("company_id") int company_id);
 
     @Modifying
     @Query(value = "UPDATE cms_2.Resource SET resource_name=:resource_name,\"type\" =:type,thumbnail = :thumbnail,\"file\"=:file," +

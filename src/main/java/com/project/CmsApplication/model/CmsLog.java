@@ -35,7 +35,7 @@ public class CmsLog {
     public String action_name;
 
     @NotNull
-    @Column(name = "action_body")
+    @Column(name = "action_body",columnDefinition="TEXT")
     public String action_body;
 
 

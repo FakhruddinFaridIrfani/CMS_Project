@@ -50,11 +50,16 @@ public interface DeviceRepository extends JpaRepository<Device, Integer> {
     @Query(value = "SELECT * from cms_2.Device WHERE license_key =:license_key and status <> 'deleted'", nativeQuery = true)
     List<Device> checkLicenseKeyCount(@Param("license_key") String license_key);
 
-    @Query(value = "SELECT * from cms_2.Device WHERE lower(device_name) = lower(:device_name) AND status not in ('deleted')", nativeQuery = true)
-    List<Device> getDeviceByName(@Param("device_name") String device_name);
+    @Query(value = "SELECT * from cms_2.Device WHERE lower(device_name) = lower(:device_name) AND status not in ('deleted') AND company_id = :company_id AND region_id = :region_id AND branch_id = :branch_id", nativeQuery = true)
+    List<Device> getDeviceByName(@Param("device_name") String device_name,
+                                 @Param("branch_id") int branch_id,
+                                 @Param("region_id") int region_id,
+                                 @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * from cms_2.Device WHERE lower(device_name) = lower(:device_name) AND device_id not in (:device_id) AND status not in ('deleted')", nativeQuery = true)
-    List<Device> getDeviceByNameExceptId(@Param("device_name") String device_name, @Param("device_id") int device_id);
+    @Query(value = "SELECT * from cms_2.Device WHERE lower(device_name) = lower(:device_name) AND device_id not in (:device_id) AND status not in ('deleted') AND company_id = :company_id AND region_id = :region_id AND branch_id = :branch_id", nativeQuery = true)
+    List<Device> getDeviceByNameExceptId(@Param("device_name") String device_name, @Param("device_id") int device_id,  @Param("branch_id") int branch_id,
+                                         @Param("region_id") int region_id,
+                                         @Param("company_id") int company_id);
 
     @Modifying
     @Query(value = "UPDATE cms_2.Device SET device_name=:device_name,status=:status," +

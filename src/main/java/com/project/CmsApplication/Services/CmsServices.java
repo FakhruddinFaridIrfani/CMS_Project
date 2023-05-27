@@ -2240,7 +2240,8 @@ public class CmsServices {
             device_name = jsonInput.optString("device_name");
 
             //Device name  check
-            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(device_name);
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByName(device_name, Integer.valueOf(authBranch),
+                    Integer.valueOf(authRegion), Integer.valueOf(authCompany));
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -2434,7 +2435,8 @@ public class CmsServices {
             status = jsonInput.optString("status").toLowerCase();
             device_id = jsonInput.optInt("device_id");
             //Device name  check
-            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(device_name, device_id);
+            List<Device> deviceNameCheckResult = deviceRepository.getDeviceByNameExceptId(device_name, device_id, Integer.valueOf(authBranch),
+                    Integer.valueOf(authRegion), Integer.valueOf(authCompany));
             if (deviceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -2591,11 +2593,11 @@ public class CmsServices {
         return getDeviceResult;
     }
 
-    public List<Device> getDeviceByName(String device_name) {
-        List<Device> getDeviceResult = new ArrayList<>();
-        getDeviceResult = deviceRepository.getDeviceByName(device_name);
-        return getDeviceResult;
-    }
+//    public List<Device> getDeviceByName(String device_name) {
+//        List<Device> getDeviceResult = new ArrayList<>();
+//        getDeviceResult = deviceRepository.getDeviceByName(device_name);
+//        return getDeviceResult;
+//    }
 
 
     //POSITION SECTION
@@ -2959,11 +2961,12 @@ public class CmsServices {
             }
 
             //Resource name  check
-            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(resource_name);
+            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByName(resource_name, Integer.valueOf(authBranch),
+                    Integer.valueOf(authRegion), Integer.valueOf(authCompany));
             if (resourceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
-                response.setMessage(REGION_NAME_EXIST);
+                response.setMessage(RESOURCE_NAME_EXIST);
                 cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_RESOURCE, log.toString(), FAILED_MESSAGE, RESOURCE_NAME_EXIST);
                 return response;
             }
@@ -3307,7 +3310,8 @@ public class CmsServices {
             authRegion = auth.get("region_id").toString();
             authBranch = auth.get("branch_id").toString();
             //Resource name  check
-            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByNameExceptId(jsonInput.optString("resource_name"), jsonInput.optInt("resource_id"));
+            List<Resource> resourceNameCheckResult = resourceRepository.getResourceByNameExceptId(jsonInput.optString("resource_name"),
+                    jsonInput.optInt("resource_id"), Integer.valueOf(authBranch), Integer.valueOf(authRegion), Integer.valueOf(authCompany));
             if (resourceNameCheckResult.size() > 0) {
                 response.setStatus("500");
                 response.setSuccess(false);
@@ -3396,11 +3400,11 @@ public class CmsServices {
         return getResourceResult;
     }
 
-    public List<Resource> getResourceByName(String resource_name) {
-        List<Resource> getResourceResult = new ArrayList<>();
-        getResourceResult = resourceRepository.getResourceByName(resource_name);
-        return getResourceResult;
-    }
+//    public List<Resource> getResourceByName(String resource_name) {
+//        List<Resource> getResourceResult = new ArrayList<>();
+//        getResourceResult = resourceRepository.getResourceByName(resource_name);
+//        return getResourceResult;
+//    }
 
     //PLAYLIST SECTION
     public BaseResponse<String> addNewPlaylist(String input) throws Exception {
@@ -3487,7 +3491,7 @@ public class CmsServices {
             }
 
             if (is_default == true) {
-                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id);
+                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id, 0);
                 if (playlistListCheckDefaultList.size() > 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
@@ -3776,7 +3780,7 @@ public class CmsServices {
                 is_default = Boolean.valueOf(is_defaultStr);
             }
             if (is_default == true) {
-                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id);
+                List<Playlist> playlistListCheckDefaultList = playlistRepository.checkAddNewDefaultPlaylistAvailability(profile_id, playlist_id);
                 if (playlistListCheckDefaultList.size() > 0) {
                     response.setStatus("500");
                     response.setSuccess(false);
@@ -3873,7 +3877,9 @@ public class CmsServices {
             for (int i = 0; i < getPositionByProfileId.size(); i++) {
                 Map resultData = new HashMap();
                 Position position = getPositionByProfileId.get(i);
-                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
+                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(profile_id, false);
+                if (playlistList.size() == 0)
+                    playlistList = playlistRepository.getDefaultPlaylistByProfileId(profile_id);
                 if (playlistList.size() == 0) {
                     response.setData(new ArrayList<>());
                     response.setStatus("404");
@@ -3881,6 +3887,8 @@ public class CmsServices {
                     response.setMessage("No playlist for this profile");
                     return response;
                 }
+
+
                 resultData.put("position_id", position.getPosition_id());
                 resultData.put("box", position.getBox());
                 resultData.put("x_position", position.getX_pos());
@@ -3984,109 +3992,109 @@ public class CmsServices {
         return response;
     }
 
-    public BaseResponse getPlaylistByProfileIDesktop(String input) throws SQLException, Exception {
-        BaseResponse response = new BaseResponse();
-        List results = new ArrayList();
-        try {
-            JSONObject jsonInput = new JSONObject(input);
-            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
-
-            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
-                response.setStatus("500");
-                response.setSuccess(false);
-                response.setMessage("Token Authentication Failed");
-                return response;
-            }
-            int profile_id = jsonInput.getInt("profile_id");
-            List<Position> getPositionByProfileId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
-            if (getPositionByProfileId.size() == 0) {
-                response.setData(new ArrayList<>());
-                response.setStatus("404");
-                response.setSuccess(false);
-                response.setMessage("This profile don't have any layout");
-                return response;
-            }
-
-            for (int i = 0; i < getPositionByProfileId.size(); i++) {
-                Map resultData = new HashMap();
-                Position position = getPositionByProfileId.get(i);
-                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
-                if (playlistList.size() == 0) {
-                    response.setData(new ArrayList<>());
-                    response.setStatus("404");
-                    response.setSuccess(false);
-                    response.setMessage("No playlist for this profile");
-                    return response;
-                }
-                resultData.put("position_id", position.getPosition_id());
-                resultData.put("box", position.getBox());
-                resultData.put("x_position", position.getX_pos());
-                resultData.put("y_position", position.getY_pos());
-                resultData.put("height", position.getHeight());
-                resultData.put("weight", position.getWidth());
-                resultData.put("uom", position.getMeasurement());
-                List playlistResult = new ArrayList();
-                for (int j = 0; j < playlistList.size(); j++) {
-                    Map resultPlayListMap = new HashMap();
-                    Playlist playlist = playlistList.get(j);
-                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylistAndPosition(playlist.getPlaylist_id(), position.getPosition_id());
-                    resultPlayListMap.put("playlist_id", playlist.getPlaylist_id());
-                    resultPlayListMap.put("playlist_name", playlist.getPlaylist_name());
-                    resultPlayListMap.put("start_date", playlist.getStart_date());
-                    resultPlayListMap.put("end_date", playlist.getEnd_date());
-                    resultPlayListMap.put("is_default", playlist.isIs_default());
-                    List resourcesResult = new ArrayList();
-                    for (int k = 0; k < getPlaylistResource.size(); k++) {
-                        Map resultResourceMap = new HashMap();
-                        PlaylistResource playlistResource = getPlaylistResource.get(k);
-                        List<Resource> resourceList = resourceRepository.getResourceById(playlistResource.getResource_id());
-                        Resource resource = resourceList.get(0);
-                        resultResourceMap.put("order", playlistResource.getOrder());
-                        resultResourceMap.put("resource_id", resource.getResource_id());
-                        resultResourceMap.put("resource_name", resource.getResource_name());
-                        resultResourceMap.put("resource_type", resource.getType());
-                        resultResourceMap.put("resource_duration", resource.getDuration());
-                        resultResourceMap.put("resource_stretch", resource.getStretch());
-                        resultResourceMap.put("resource_url", resource.getUrl_resource());
-                        List<String> urlDownload = new ArrayList<>();
-                        if (!resource.getType().isEmpty() && resource.getType().compareToIgnoreCase("web") != 0) {
-                            String fileName = resource.getFile();
-                            urlDownload.add("/resource/downloadResource/" + fileName);
-                        }
-
-                        resultResourceMap.put("url_download", urlDownload);
-                        resourcesResult.add(resultResourceMap);
-                    }
-                    resultPlayListMap.put("resources", resourcesResult);
-
-                    playlistResult.add(resultPlayListMap);
-                }
-
-
-                resultData.put("playlist", playlistResult);
-                results.add(resultData);
-            }
-            if (results.size() > 0) {
-                response.setData(results);
-                response.setStatus("200");
-                response.setSuccess(true);
-                response.setMessage("Playlist Listed");
-            } else {
-                response.setData(new ArrayList<>());
-                response.setStatus("404");
-                response.setSuccess(false);
-                response.setMessage("No playlist found for this profile");
-            }
-
-
-        } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
-            response.setStatus("500");
-            response.setSuccess(false);
-            response.setMessage(e.getMessage());
-        }
-        return response;
-    }
+//    public BaseResponse getPlaylistByProfileIDesktop(String input) throws SQLException, Exception {
+//        BaseResponse response = new BaseResponse();
+//        List results = new ArrayList();
+//        try {
+//            JSONObject jsonInput = new JSONObject(input);
+//            Map<String, Object> auth = tokenAuthentication(jsonInput.optString("user_token"));
+//
+//            if (Boolean.valueOf(auth.get("valid").toString()) == false) {
+//                response.setStatus("500");
+//                response.setSuccess(false);
+//                response.setMessage("Token Authentication Failed");
+//                return response;
+//            }
+//            int profile_id = jsonInput.getInt("profile_id");
+//            List<Position> getPositionByProfileId = positionRepository.getPositionByProfileIdBasedOnPlaylist(profile_id);
+//            if (getPositionByProfileId.size() == 0) {
+//                response.setData(new ArrayList<>());
+//                response.setStatus("404");
+//                response.setSuccess(false);
+//                response.setMessage("This profile don't have any layout");
+//                return response;
+//            }
+//
+//            for (int i = 0; i < getPositionByProfileId.size(); i++) {
+//                Map resultData = new HashMap();
+//                Position position = getPositionByProfileId.get(i);
+//                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(position.getProfile_id());
+//                if (playlistList.size() == 0) {
+//                    response.setData(new ArrayList<>());
+//                    response.setStatus("404");
+//                    response.setSuccess(false);
+//                    response.setMessage("No playlist for this profile");
+//                    return response;
+//                }
+//                resultData.put("position_id", position.getPosition_id());
+//                resultData.put("box", position.getBox());
+//                resultData.put("x_position", position.getX_pos());
+//                resultData.put("y_position", position.getY_pos());
+//                resultData.put("height", position.getHeight());
+//                resultData.put("weight", position.getWidth());
+//                resultData.put("uom", position.getMeasurement());
+//                List playlistResult = new ArrayList();
+//                for (int j = 0; j < playlistList.size(); j++) {
+//                    Map resultPlayListMap = new HashMap();
+//                    Playlist playlist = playlistList.get(j);
+//                    List<PlaylistResource> getPlaylistResource = playlistResourceRepository.getPlaylistResourceByPlaylistAndPosition(playlist.getPlaylist_id(), position.getPosition_id());
+//                    resultPlayListMap.put("playlist_id", playlist.getPlaylist_id());
+//                    resultPlayListMap.put("playlist_name", playlist.getPlaylist_name());
+//                    resultPlayListMap.put("start_date", playlist.getStart_date());
+//                    resultPlayListMap.put("end_date", playlist.getEnd_date());
+//                    resultPlayListMap.put("is_default", playlist.isIs_default());
+//                    List resourcesResult = new ArrayList();
+//                    for (int k = 0; k < getPlaylistResource.size(); k++) {
+//                        Map resultResourceMap = new HashMap();
+//                        PlaylistResource playlistResource = getPlaylistResource.get(k);
+//                        List<Resource> resourceList = resourceRepository.getResourceById(playlistResource.getResource_id());
+//                        Resource resource = resourceList.get(0);
+//                        resultResourceMap.put("order", playlistResource.getOrder());
+//                        resultResourceMap.put("resource_id", resource.getResource_id());
+//                        resultResourceMap.put("resource_name", resource.getResource_name());
+//                        resultResourceMap.put("resource_type", resource.getType());
+//                        resultResourceMap.put("resource_duration", resource.getDuration());
+//                        resultResourceMap.put("resource_stretch", resource.getStretch());
+//                        resultResourceMap.put("resource_url", resource.getUrl_resource());
+//                        List<String> urlDownload = new ArrayList<>();
+//                        if (!resource.getType().isEmpty() && resource.getType().compareToIgnoreCase("web") != 0) {
+//                            String fileName = resource.getFile();
+//                            urlDownload.add("/resource/downloadResource/" + fileName);
+//                        }
+//
+//                        resultResourceMap.put("url_download", urlDownload);
+//                        resourcesResult.add(resultResourceMap);
+//                    }
+//                    resultPlayListMap.put("resources", resourcesResult);
+//
+//                    playlistResult.add(resultPlayListMap);
+//                }
+//
+//
+//                resultData.put("playlist", playlistResult);
+//                results.add(resultData);
+//            }
+//            if (results.size() > 0) {
+//                response.setData(results);
+//                response.setStatus("200");
+//                response.setSuccess(true);
+//                response.setMessage("Playlist Listed");
+//            } else {
+//                response.setData(new ArrayList<>());
+//                response.setStatus("404");
+//                response.setSuccess(false);
+//                response.setMessage("No playlist found for this profile");
+//            }
+//
+//
+//        } catch (Exception e) {
+//            logger.info("Failed : " + e.getMessage());
+//            response.setStatus("500");
+//            response.setSuccess(false);
+//            response.setMessage(e.getMessage());
+//        }
+//        return response;
+//    }
 
     public BaseResponse getPlaylistDesktop(String input) throws SQLException, Exception {
         BaseResponse response = new BaseResponse();
@@ -5739,7 +5747,9 @@ public class CmsServices {
                 Profile profile = getProfileResult.get(i);
                 List<Position> positionList = positionRepository.getPositionByProfileId(profile.getProfile_id());
                 if (positionList.size() == 0) continue;
-                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(profile.getProfile_id());
+                List<Playlist> playlistList = playlistRepository.getPlaylistByProfileId(profile.getProfile_id(), false);
+                if (playlistList.size() == 0)
+                    playlistList = playlistRepository.getDefaultPlaylistByProfileId(profile.getProfile_id());
                 if (playlistList.size() == 0) continue;
 
                 Map resultMap = new HashMap();

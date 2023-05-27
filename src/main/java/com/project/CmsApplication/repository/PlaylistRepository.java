@@ -92,8 +92,15 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
     @Query(value = "SELECT * from cms_2.Playlist WHERE end_date < current_timestamp AND status = 'active' AND is_default <> true", nativeQuery = true)
     List<Playlist> getExpiredPlaylist();
 
-    @Query(value = "SELECT * from cms_2.playlist where profile_id = :profile_id AND status <> 'deleted' AND status <> 'inactive' ORDER BY start_date DESC  limit 1", nativeQuery = true)
-    List<Playlist> getPlaylistByProfileId(@Param("profile_id") int profile_id);
+    @Query(value = "SELECT * from cms_2.playlist where profile_id = :profile_id AND status <> 'deleted' " +
+            "AND (CURRENT_DATE BETWEEN CAST(start_date AS DATE) and CAST(end_date AS DATE) OR CURRENT_DATE = CAST(start_date AS DATE) OR CURRENT_DATE = CAST(end_date AS DATE))" +
+            "AND status <> 'inactive'  AND is_default = :is_default ORDER BY start_date ASC  limit 1", nativeQuery = true)
+    List<Playlist> getPlaylistByProfileId(@Param("profile_id") int profile_id,@Param("is_default")Boolean is_default);
+
+    @Query(value = "SELECT * from cms_2.playlist where profile_id = :profile_id AND status <> 'deleted' " +
+            "AND status <> 'inactive'  AND is_default = true ORDER BY start_date ASC  limit 1", nativeQuery = true)
+    List<Playlist> getDefaultPlaylistByProfileId(@Param("profile_id") int profile_id);
+
 
     @Query(value = "SELECT " +
             "    CASE " +
@@ -106,16 +113,18 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Integer> {
             "  FROM cms_2.playlist where profile_id = :profile_id AND status ='active' AND is_default = false ", nativeQuery = true)
     String checkAddNewPlaylistAvailability(@Param("profile_id") int profile_id, @Param("start_date_input") String start_date_input, @Param("end_date_input") String end_date_input);
 
-    @Query(value = "SELECT * from CMS_2.playlist where CAST(:start_date_input AS DATE) BETWEEN CAST(start_date AS DATE) and CAST(end_date AS DATE) " +
-            "and CAST(:end_date_input AS DATE) between CAST(start_date AS DATE) and CAST(end_date AS DATE) " +
-            "AND CAST(start_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE) " +
-            "AND CAST(end_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE) " +
+    @Query(value = "SELECT * from CMS_2.playlist where (CAST(:start_date_input AS DATE) BETWEEN CAST(start_date AS DATE) and CAST(end_date AS DATE) " +
+            "OR CAST(:end_date_input AS DATE) between CAST(start_date AS DATE) and CAST(end_date AS DATE) " +
+            "OR CAST(start_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE) " +
+            "OR CAST(end_date AS DATE) between CAST(:start_date_input AS DATE) and CAST(:end_date_input AS DATE)) " +
             "AND profile_id = :profile_id " +
             "AND status ='active' " +
             "AND is_default = false " +
             "AND playlist_id <> :playlist_id ", nativeQuery = true)
     List<Playlist> checkDateForPlaylist(@Param("profile_id") int profile_id, @Param("start_date_input") String start_date_input, @Param("end_date_input") String end_date_input, @Param("playlist_id") int playlist_id);
 
-    @Query(value = "SELECT * FROM cms_2.playlist where profile_id = :profile_id AND is_default = true", nativeQuery = true)
-    List<Playlist> checkAddNewDefaultPlaylistAvailability(@Param("profile_id") int profile_id);
+    @Query(value = "SELECT * FROM cms_2.playlist where profile_id = :profile_id AND is_default = true AND playlist_id <> :playlist_id AND status = 'active' ", nativeQuery = true)
+    List<Playlist> checkAddNewDefaultPlaylistAvailability(@Param("profile_id") int profile_id,@Param("playlist_id")int playlist_id);
+
+
 }
