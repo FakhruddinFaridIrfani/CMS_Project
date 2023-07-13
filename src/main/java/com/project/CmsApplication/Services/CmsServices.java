@@ -10,7 +10,6 @@ import com.project.CmsApplication.model.*;
 import com.project.CmsApplication.repository.*;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.BooleanUtils;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.json.JSONArray;
@@ -119,7 +118,7 @@ public class CmsServices {
 //    @Qualifier("entityManagerFactory")
 //    private EntityManager entityManager;
 
-    Logger logger = LoggerFactory.getLogger(CmsServices.class);
+    Logger LOG = LoggerFactory.getLogger(CmsServices.class);
 
     @Value("${attachment.path.promo}")
     private String attachmentPathPromo;
@@ -199,7 +198,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_ROLE, input, SUCCESS_MESSAGE, ROLE_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -249,7 +248,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Role Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -296,7 +295,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_ROLE, input, SUCCESS_MESSAGE, ROLE_UPDATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -342,7 +341,7 @@ public class CmsServices {
             response.setMessage(ROLE_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_ROLE, input, SUCCESS_MESSAGE, ROLE_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -372,7 +371,7 @@ public class CmsServices {
                 response.setStatus("0");
                 response.setSuccess(false);
                 response.setMessage("Token Authentication Failed");
-                logger.info("Token Authentication Failed");
+                LOG.info("Token Authentication Failed");
                 return response;
             }
             String userOnProcess = auth.get("user_name").toString();
@@ -396,7 +395,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Privilege Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("0");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -436,7 +435,7 @@ public class CmsServices {
             response.setMessage(PRIVILEGE_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_PRIVILEGE, input, SUCCESS_MESSAGE, PRIVILEGE_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -644,7 +643,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("User Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -703,8 +702,8 @@ public class CmsServices {
             company_id = jsonInput.optInt("company_id");
             role_id = jsonInput.optInt("role_id");
             user_id = jsonInput.optInt("user_id");
-            user_password = jsonInput.optString("user_password");
-            if (user_password.isEmpty()) user_password = null;
+            user_password = jsonInput.optString("user_password", "");
+
 
             if (role_id == 0) {
                 response.setStatus("500");
@@ -713,9 +712,16 @@ public class CmsServices {
                 cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_USER, input, FAILED_MESSAGE, USER_ROLE_NULL);
                 return response;
             }
+            if (user_password.isEmpty()) {
 
-            usersRepository.updateUser(user_email, user_password, status, user_full_name, userOnProcess, branch_id,
-                    region_id, company_id, role_id, user_id);
+                usersRepository.updateUserNoPassword(user_email, status, user_full_name, userOnProcess, branch_id,
+                        region_id, company_id, role_id, user_id);
+            } else {
+                LOG.info("Password updated");
+                usersRepository.updateUser(user_email, user_password, status, user_full_name, userOnProcess, branch_id,
+                        region_id, company_id, role_id, user_id);
+            }
+
             response.setStatus("200");
             response.setSuccess(true);
             response.setMessage(USER_UPDATED);
@@ -737,7 +743,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_USER, outputUsers.toString(), SUCCESS_MESSAGE, USER_UPDATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -774,7 +780,7 @@ public class CmsServices {
             response.setMessage(USER_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_USER, input, SUCCESS_MESSAGE, USER_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -883,7 +889,7 @@ public class CmsServices {
             response.setMessage("Login Success !!");
             cmsLogService.createNewLogEntry(user_name, "", "", "", USER_LOGIN, (new JSONObject().put("password", "").put("user_name", user_name)).toString(), SUCCESS_MESSAGE, "");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -911,7 +917,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Password Changed !!");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1141,7 +1147,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1202,7 +1208,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Company Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1259,7 +1265,7 @@ public class CmsServices {
             response.setMessage(COMPANY_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1308,7 +1314,7 @@ public class CmsServices {
             response.setMessage(COMPANY_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_COMPANY, input, SUCCESS_MESSAGE, COMPANY_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1396,7 +1402,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_REGION, input, SUCCESS_MESSAGE, REGION_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create Region : " + e.getMessage());
@@ -1468,7 +1474,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Region Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1540,7 +1546,7 @@ public class CmsServices {
             response.setMessage(REGION_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_REGION, input, SUCCESS_MESSAGE, REGION_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1589,7 +1595,7 @@ public class CmsServices {
             response.setMessage(REGION_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_REGION, input, SUCCESS_MESSAGE, REGION_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1697,7 +1703,7 @@ public class CmsServices {
             response.setMessage(BRANCH_CREATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_CREATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1778,7 +1784,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Branch Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1860,7 +1866,7 @@ public class CmsServices {
             response.setMessage(BRANCH_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1920,7 +1926,7 @@ public class CmsServices {
             response.setMessage(BRANCH_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_BRANCH, input, SUCCESS_MESSAGE, BRANCH_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -1989,7 +1995,7 @@ public class CmsServices {
             response.setMessage("Promo successfully Added");
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed create branch : " + e.getMessage());
@@ -2096,12 +2102,12 @@ public class CmsServices {
             for (Map map : result) {
                 Promo promo = (Promo) map.get("promo");
                 if (!promo.getThumbnail().isEmpty()) {
-                    logger.info("promo thumbnail : " + promo.getThumbnail());
+                    LOG.info("promo thumbnail : " + promo.getThumbnail());
                     try {
                         promo.setThumbnail(getFile(promo.getThumbnail(), "promo").getData().get("file_base64").toString());
                     } catch (Exception e) {
-                        logger.info("Failed : " + e.getMessage());
-                        logger.info("promo error : " + e.getMessage());
+                        LOG.info("Failed : " + e.getMessage());
+                        LOG.info("promo error : " + e.getMessage());
                         promo.setThumbnail("");
                     }
                 }
@@ -2113,7 +2119,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Promo Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2164,7 +2170,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Promo successfully Updated");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2193,7 +2199,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Promo successfully deleted");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2283,7 +2289,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, CREATE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_CREATED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2399,7 +2405,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2463,7 +2469,7 @@ public class CmsServices {
             response.setMessage(DEVICE_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2503,7 +2509,7 @@ public class CmsServices {
             response.setMessage(DEVICE_DELETED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, DELETE_DEVICE, input, SUCCESS_MESSAGE, DEVICE_DELETED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2534,7 +2540,7 @@ public class CmsServices {
             }
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2578,7 +2584,7 @@ public class CmsServices {
             cmsLogService.createNewLogEntry(device_unique_id, "", "", "", DEVICE_LICENSE_AUTHENTICATION, input, SUCCESS_MESSAGE, DEVICE_AUTHENTICATED_REGISTERED);
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed to check license key :" + e.getMessage());
@@ -2760,7 +2766,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Position Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -2821,7 +2827,7 @@ public class CmsServices {
             response.setMessage(POSITION_UPDATED);
             cmsLogService.createNewLogEntry(authName, authCompany, authRegion, authBranch, UPDATE_POSITION, input, SUCCESS_MESSAGE, POSITION_UPDATED);
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3181,7 +3187,7 @@ public class CmsServices {
                     try {
                         resource.setThumbnail(getFile(resource.getThumbnail(), "resource").getData().get("file_base64").toString());
                     } catch (Exception e) {
-                        logger.info("Failed : " + e.getMessage());
+                        LOG.info("Failed : " + e.getMessage());
                         resource.setThumbnail("");
                     }
                 }
@@ -3199,7 +3205,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Resource Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3279,7 +3285,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Resource Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3632,7 +3638,7 @@ public class CmsServices {
 
             for (int i = 0; i < getResultPlayList.size(); i++) {
                 Playlist playlist = getResultPlayList.get(i);
-                logger.info("playlist count : " + getResultPlayList);
+                LOG.info("playlist count : " + getResultPlayList);
                 Map resultMap = new HashMap();
                 if (getResultPlayList.get(i).getBranch_id() != 0) {
                     List<Branch> branch = branchRepository.getBranchById(getResultPlayList.get(i).getBranch_id());
@@ -3685,7 +3691,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Playlist Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -3950,7 +3956,7 @@ public class CmsServices {
                                     String imageName = imagePrefix.concat("(").concat(num.toString()).concat(").jpg");
                                     sortedImage.add(imageName);
                                 }
-                                logger.info("sorted : " + sortedImage);
+                                LOG.info("sorted : " + sortedImage);
                                 urlDownload.addAll(sortedImage);
 
                             } else {
@@ -3984,7 +3990,7 @@ public class CmsServices {
 
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4181,7 +4187,7 @@ public class CmsServices {
             return response;
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4230,7 +4236,7 @@ public class CmsServices {
             response.setMessage("Playlist add resource successfully");
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4274,7 +4280,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4305,7 +4311,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully Updated");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4339,7 +4345,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("PlaylistResource successfully deleted");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4539,7 +4545,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("RunningText Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4586,7 +4592,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("RunningText Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -4735,7 +4741,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setData(new ArrayList<>());
             response.setStatus("500");
             response.setSuccess(false);
@@ -4779,10 +4785,10 @@ public class CmsServices {
 
             if (log_start_date == null || log_end_date == null) {
                 logList = deviceMonitoringLogRepository.getDeviceMonitoringLogList(device_id);
-                logger.info("no date filter on device monitoring log");
+                LOG.info("no date filter on device monitoring log");
             } else {
                 logList = deviceMonitoringLogRepository.getDeviceMonitoringLogListWithDate(device_id, log_start_date, log_end_date);
-                logger.info("with date filter on device monitoring log");
+                LOG.info("with date filter on device monitoring log");
             }
 
             int maxPage = (int) Math.ceil(logList.size() / (limit * 1.0));
@@ -4794,7 +4800,7 @@ public class CmsServices {
                 try {
                     deviceMonitoringLog.setLog_screenshot_path(getFileDirectPath(deviceMonitoringLog.getLog_screenshot_path()).getData().get("file_base64").toString());
                 } catch (Exception e) {
-                    logger.info("Failed : " + e.getMessage());
+                    LOG.info("Failed : " + e.getMessage());
                     deviceMonitoringLog.setLog_screenshot_path("");
                 }
             }
@@ -4808,7 +4814,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Device log listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setData(new ArrayList<>());
             response.setStatus("500");
             response.setSuccess(false);
@@ -4851,11 +4857,11 @@ public class CmsServices {
             try {
                 attrs = ((ChannelSftp) channel).stat(getAttachmentPathScreenshot + folder_date);
             } catch (Exception e) {
-                logger.info(getAttachmentPathScreenshot + folder_date + " not found");
+                LOG.info(getAttachmentPathScreenshot + folder_date + " not found");
             }
 
             if (attrs == null) {
-                logger.info("Create directory " + folder_date);
+                LOG.info("Create directory " + folder_date);
                 ((ChannelSftp) channel).mkdir(getAttachmentPathScreenshot + folder_date);
             }
 
@@ -4952,7 +4958,7 @@ public class CmsServices {
 
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("can't add license : " + e.getMessage());
@@ -5008,7 +5014,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("License key generated");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage("Failed to generate license key :" + e.getMessage());
@@ -5043,7 +5049,7 @@ public class CmsServices {
             }
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             result.put("valid", false);
             result.put("user_name", "");
         }
@@ -5092,7 +5098,7 @@ public class CmsServices {
             String thumbnailName = "";
             String fileExtension = file_name.substring(file_name.lastIndexOf(".") + 1);
             if (acceptedImage.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
-                logger.info("creating thumbnail for  " + fileExtension + " image");
+                LOG.info("creating thumbnail for  " + fileExtension + " image");
                 BufferedImage img = ImageIO.read(new ByteArrayInputStream(b));
                 BufferedImage resizedImage = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics2D = resizedImage.createGraphics();
@@ -5106,13 +5112,13 @@ public class CmsServices {
                 channel.put(streamThumbnail, path + "thumbnail_" + uuid + "_" + file_name, 0);
                 thumbnailName = "thumbnail_" + uuid + "_" + file_name;
             } else if (acceptedVideo.stream().anyMatch(fileExtension::equalsIgnoreCase)) {
-                logger.info("creating thumbnail for  " + fileExtension + " video");
+                LOG.info("creating thumbnail for  " + fileExtension + " video");
                 thumbnailName = "thumbnail_video.png";
             } else if (fileExtension.compareToIgnoreCase("pptx") == 0 || fileExtension.compareToIgnoreCase("ppt") == 0 || fileExtension.compareToIgnoreCase("pps") == 0 || fileExtension.compareToIgnoreCase("ppsx") == 0) {
-                logger.info("creating thumbnail for  " + fileExtension + " power point");
+                LOG.info("creating thumbnail for  " + fileExtension + " power point");
                 thumbnailName = "thumbnail_ppt.png";
             } else {
-                logger.info("its not an image or video, used web thumbnail");
+                LOG.info("its not an image or video, used web thumbnail");
                 thumbnailName = "thumbnail_url.png";
             }
 
@@ -5124,11 +5130,11 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
-            logger.info(new Date().getTime() + e.getMessage());
+            LOG.info(new Date().getTime() + e.getMessage());
         } finally {
             if (session.isConnected() || session != null) {
                 session.disconnect();
@@ -5192,7 +5198,7 @@ public class CmsServices {
                 response.setStatus("500");
                 response.setSuccess(false);
                 response.setMessage("unknown folder");
-                logger.info("unknown folder");
+                LOG.info("unknown folder");
                 return response;
             }
 
@@ -5209,11 +5215,11 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Get File success");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
-            logger.info(new Date().getTime() + e.getMessage());
+            LOG.info(new Date().getTime() + e.getMessage());
         } finally {
             if (session.isConnected() || session != null) {
                 session.disconnect();
@@ -5240,29 +5246,29 @@ public class CmsServices {
             channel.connect();
             InputStream inputStream = channel.get(attachmentPathResource + file_name);
 
-            logger.info("FILE LOADED INTO STREAM");
+            LOG.info("FILE LOADED INTO STREAM");
 
 //            File file = new File("temp.pptx");
 //            FileUtils.copyInputStreamToFile(stream, file);
             XMLSlideShow ppt = new XMLSlideShow(inputStream);
             inputStream.close();
-            logger.info("PPT LOADED");
+            LOG.info("PPT LOADED");
             String fileNameOnly = file_name.split("\\.")[0];
-            logger.info("FILE NAME : " + fileNameOnly);
+            LOG.info("FILE NAME : " + fileNameOnly);
 //
             // get the dimension and size of the slide
             Dimension pgsize = ppt.getPageSize();
             List<XSLFSlide> slide = ppt.getSlides();
             BufferedImage img = null;
 
-            logger.info("slide size : " + slide.size());
+            LOG.info("slide size : " + slide.size());
 
             for (int i = 0; i < slide.size(); i++) {
                 img = new BufferedImage(
                         pgsize.width, pgsize.height,
                         BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics = img.createGraphics();
-                logger.info("img create : " + i);
+                LOG.info("img create : " + i);
 
                 // clear area
                 graphics.setPaint(Color.white);
@@ -5271,21 +5277,21 @@ public class CmsServices {
 
                 // draw the images
                 slide.get(i).draw(graphics);
-                logger.info("image draw : " + i);
+                LOG.info("image draw : " + i);
                 // file.getParent().mkdirs();
 
 //                System.out.println(fileNameWithOutExt);
 //                OutputStream outputStream = channel.put(attachmentPathResource + fileNameOnly + "-" + i + ".png", 0);
 
                 String imageFileName = fileNameOnly + "(" + i + ").jpg";
-                logger.info("image name : " + imageFileName);
+                LOG.info("image name : " + imageFileName);
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 ImageIO.write(img, "png", os);
-                logger.info("write to OS success : " + i);
+                LOG.info("write to OS success : " + i);
                 InputStream fis = new ByteArrayInputStream(os.toByteArray());
-                logger.info("IS created from OS : " + i);
+                LOG.info("IS created from OS : " + i);
                 channel.put(fis, attachmentPathResource + imageFileName, 0);
-                logger.info("image name generated : " + imageFileName);
+                LOG.info("image name generated : " + imageFileName);
                 result.add("/resource/downloadResource/" + imageFileName);
 
 //                FileOutputStream out = new FileOutputStream(
@@ -5297,14 +5303,14 @@ public class CmsServices {
 //                System.out.println(i);
             }
         } catch (SftpException e) {
-            logger.info("error while parsing ppt :" + e.getMessage());
+            LOG.info("error while parsing ppt :" + e.getMessage());
             return null;
         } catch (IOException e) {
-            logger.info("error while parsing ppt :" + e.getMessage());
+            LOG.info("error while parsing ppt :" + e.getMessage());
             return null;
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
-            logger.info("error while parsing ppt :" + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
+            LOG.info("error while parsing ppt :" + e.getMessage());
             return null;
         } finally {
             if (session.isConnected() || session != null) {
@@ -5341,11 +5347,11 @@ public class CmsServices {
 
 
         } catch (SftpException e) {
-            logger.info("error while get ppt image parsed :" + e.getMessage());
+            LOG.info("error while get ppt image parsed :" + e.getMessage());
             return null;
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
-            logger.info("error while parsing ppt :" + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
+            LOG.info("error while parsing ppt :" + e.getMessage());
             return null;
         } finally {
             if (session.isConnected() || session != null) {
@@ -5374,7 +5380,7 @@ public class CmsServices {
 
 
             InputStream inputStream = channel.get(path);
-            logger.info("file path : " + path);
+            LOG.info("file path : " + path);
             byte[] bytes = IOUtils.toByteArray(inputStream);
             String base64 = Base64.getEncoder().encodeToString(bytes);
 
@@ -5386,11 +5392,11 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Get File success");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
-            logger.info(new Date().getTime() + e.getMessage());
+            LOG.info(new Date().getTime() + e.getMessage());
         } finally {
             if (session.isConnected() || session != null) {
                 session.disconnect();
@@ -5435,18 +5441,18 @@ public class CmsServices {
             resource = new InputStreamResource(inputStream);
             byte[] bytes = IOUtils.toByteArray(inputStream);
             String base64 = Base64.getEncoder().encodeToString(bytes);
-            logger.info("file path : " + path + file_name);
+            LOG.info("file path : " + path + file_name);
 
 //            response.setData(result);
 //            response.setStatus("200");
 //            response.setSuccess(true);
 //            response.setMessage("Get File success");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
 //            response.setStatus("500");
 //            response.setSuccess(false);
 //            response.setMessage(e.getMessage());
-            logger.info(new Date().getTime() + e.getMessage());
+            LOG.info(new Date().getTime() + e.getMessage());
         } finally {
             if (session.isConnected() || session != null) {
                 session.disconnect();
@@ -5493,11 +5499,11 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("File successfully Added");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
-            logger.info(new Date().getTime() + e.getMessage());
+            LOG.info(new Date().getTime() + e.getMessage());
         } finally {
             if (session.isConnected() || session != null) {
                 session.disconnect();
@@ -5703,7 +5709,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Profile Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -5790,7 +5796,7 @@ public class CmsServices {
             response.setSuccess(true);
             response.setMessage("Profile Listed");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setStatus("500");
             response.setSuccess(false);
             response.setMessage(e.getMessage());
@@ -6116,7 +6122,7 @@ public class CmsServices {
             response.setMessage("Database credential found");
             response.setStatus("200");
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setSuccess(false);
             response.setMessage("Failed to get database credential : " + e.getMessage());
             response.setStatus("500");
@@ -6167,7 +6173,7 @@ public class CmsServices {
             response.setStatus("200");
 
         } catch (Exception e) {
-            logger.info("Failed : " + e.getMessage());
+            LOG.info("Failed : " + e.getMessage());
             response.setSuccess(false);
             response.setMessage("Failed to get properties : " + e.getMessage());
             response.setStatus("500");

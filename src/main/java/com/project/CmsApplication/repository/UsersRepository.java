@@ -29,7 +29,7 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
             "AND lower(created_by) like lower(:created_by) " +
             "AND CAST(created_date AS VARCHAR) like :created_date " +
             "AND lower(updated_by) like lower(:updated_by) " +
-            "AND CAST(updated_date AS VARCHAR) like :updated_date ORDER BY branch_id ASC", nativeQuery = true)
+            "AND CAST(updated_date AS VARCHAR) like :updated_date ORDER BY updated_date ASC", nativeQuery = true)
     List<Users> getUsersList(@Param("user_name") String user_name, @Param("user_email") String user_email,
                              @Param("status") String status, @Param("user_full_name") String user_full_name, @Param("created_by") String created_by,
                              @Param("created_date") String created_date, @Param("updated_by") String updated_by,
@@ -63,13 +63,20 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     List<Users> tokenAuth(@Param("user_token") String user_token);
 
     @Modifying
-    @Query(value = "UPDATE cms_2.Users SET user_email=:user_email, user_password = CASE " +
-            " WHEN :user_password IS NULL then user_password else crypt(:user_password, gen_salt('bf')) end," +
+    @Query(value = "UPDATE cms_2.Users SET user_email=:user_email, user_password = crypt(:user_password, gen_salt('bf'))," +
             "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,role_id=:role_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
-    void updateUser(@Param("user_email") String user_email,@Param("user_password") String user_password,
+    void updateUser(@Param("user_email") String user_email, @Param("user_password") String user_password,
                     @Param("status") String status, @Param("user_full_name") String user_full_name,
                     @Param("updated_by") String updated_by, @Param("branch_id") int branch_id,
                     @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("role_id") int role_id, @Param("user_id") int user_id);
+
+    @Modifying
+    @Query(value = "UPDATE cms_2.Users SET user_email=:user_email, " +
+            "status=:status,user_full_name=:user_full_name,branch_id=:branch_id,region_id=:region_id,company_id=:company_id,role_id=:role_id,updated_by=:updated_by,updated_date=current_timestamp WHERE user_id =:user_id ", nativeQuery = true)
+    void updateUserNoPassword(@Param("user_email") String user_email,
+                              @Param("status") String status, @Param("user_full_name") String user_full_name,
+                              @Param("updated_by") String updated_by, @Param("branch_id") int branch_id,
+                              @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("role_id") int role_id, @Param("user_id") int user_id);
 
     @Modifying
     @Query(value = "UPDATE cms_2.Users SET status = 'deleted',updated_by=:updated_by,updated_date=current_timestamp WHERE user_id=:user_id", nativeQuery = true)
