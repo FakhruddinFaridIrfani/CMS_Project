@@ -14,7 +14,7 @@ import java.util.List;
 @Transactional
 public interface RoleRepository extends JpaRepository<Role, Integer> {
 
-    @Query(value = "SELECT * FROM cms.Role WHERE " +
+    @Query(value = "SELECT * from cms_2.Role WHERE " +
             "lower(role_name) like lower(:role_name) AND " +
             "status like :status AND " +
             "status not in('deleted') AND " +
@@ -29,30 +29,35 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
                            @Param("updated_by") String updated_by,
                            @Param("updated_date") String updated_at);
 
-    @Modifying
-    @Query(value = "INSERT INTO cms.Role(role_name,status,created_by,created_date,updated_by,updated_date) " +
-            "VALUES(:role_name,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
-    void save(@Param("role_name") String role_name, @Param("created_by") String created_by);
+//    @Modifying
+//    @Query(value = "INSERT INTO cms_2.Role(role_name,status,created_by,created_date,updated_by,updated_date) " +
+//            "VALUES(:role_name,'active',:created_by,current_timestamp,:created_by,current_timestamp)", nativeQuery = true)
+//    void save(@Param("role_name") String role_name, @Param("created_by") String created_by);
 
-    @Query(value = "SELECT * FROM cms.Role WHERE role_id =:role_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Role WHERE role_id =:role_id", nativeQuery = true)
     List<Role> getRoleById(@Param("role_id") int role_id);
 
-    @Query(value = "SELECT * FROM cms.Role WHERE lower(role_name) like lower(:role_name) AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Role WHERE lower(role_name) like lower(:role_name) AND status not in ('deleted')", nativeQuery = true)
     List<Role> getRoleByName(@Param("role_name") String role_name);
 
-    @Query(value = "SELECT * FROM cms.Role WHERE lower(role_name) like lower(:role_name) AND role_id not in (:role_id) AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Role WHERE lower(role_name) like lower(:role_name) AND role_id not in (:role_id) AND status not in ('deleted')", nativeQuery = true)
     List<Role> getRoleByNameExceptId(@Param("role_name") String role_name, @Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Role SET role_name=:role_name,status=:status," +
+    @Query(value = "UPDATE cms_2.Role SET role_name=:role_name,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp WHERE role_id =:role_id ", nativeQuery = true)
     void updateRole(@Param("role_name") String role_name, @Param("status") String status,
                     @Param("updated_by") String updated_by, @Param("role_id") int role_id);
 
     @Modifying
-    @Query(value = "UPDATE cms.Role SET status = 'deleted',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms_2.Role SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE role_id=:role_id", nativeQuery = true)
     void deleteRole(@Param("role_id") int role_id, @Param("updated_by") String updated_by);
+
+    @Query(value = "SELECT * from cms_2.Role WHERE status <> 'deleted' " +
+            "ORDER BY created_date DESC", nativeQuery = true)
+    List<Role> getRole();
+
 
 
 }

@@ -37,6 +37,12 @@ public class DeviceController {
         return cmsServices.addNewDevice(input);
     }
 
+    @PostMapping("/addNewDeviceMonitoringLog")
+    public BaseResponse<String> addNewDeviceMonitoringLog(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewDeviceMonitoringLog - " + input);
+        return cmsServices.addDeviceLog(input);
+    }
+
     @PostMapping("/updateDevice")
     public BaseResponse<Device> updateDevice(@RequestBody String input) throws Exception, SQLException, ParseException {
         logger.info(new Date().getTime() + " : updateDevice - " + input);
@@ -48,4 +54,43 @@ public class DeviceController {
         logger.info(new Date().getTime() + " : deleteDevice - " + input);
         return cmsServices.deleteDevice(input);
     }
+
+    @PostMapping("/getDeviceForLog")
+    public BaseResponse<List<Device>> getDeviceForLog(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getDeviceForLog - " + input);
+        return cmsServices.getDeviceListFromPlaylist(input);
+    }
+
+    @PostMapping("/getDeviceMonitoringLog")
+    public BaseResponse<List<Device>> getDeviceMonitoringLog(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getDeviceMonitoringLog - " + input);
+        return cmsServices.getDeviceMonitoringLog(input);
+    }
+
+    @PostMapping("/generateLicenseKey")
+    public BaseResponse generateLicenseKey(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : generateLicenseKey - " + input);
+        return cmsServices.generateLicenseKey(input);
+    }
+
+
+    @PostMapping("/checkDeviceUniqueId")
+    public BaseResponse checkDeviceUniqueId(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : checkDeviceUniqueId - " + input);
+        return cmsServices.checkDeviceUniqueId(input);
+    }
+
+    @PostMapping("/authLicenseKeyAndDeviceUniqueId")
+    public BaseResponse authLicenseKeyAndDeviceUniqueId(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : authLicenseKeyAndDeviceUniqueId - " + input);
+        return cmsServices.authLicenseKeyAndDeviceUniqueId(input);
+    }
+
+    @PostMapping("/addNewLicenseKey")
+    public BaseResponse addNewLicenseKey(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : addNewLicenseKey - " + input);
+        return cmsServices.addNewLicenseKey(input);
+    }
+
+
 }

@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "Resource", schema = "cms")
+@Table(name = "Resource", schema = "cms_2")
 public class Resource {
     @Id
     @Column(name = "resource_id", columnDefinition = "serial")
@@ -19,6 +19,17 @@ public class Resource {
     @NotNull
     @Column(name = "resource_name")
     private String resource_name;
+
+    @NotNull
+    @Column(name = "branch_id")
+    private int branch_id;
+
+    @NotNull
+    @Column(name = "region_id")
+    private int region_id;
+    @NotNull
+    @Column(name = "company_id")
+    private int company_id;
 
 
     @NotNull
@@ -37,7 +48,7 @@ public class Resource {
 
     @NotNull
     @Column(name = "duration")
-    private String duration;
+    private int duration;
 
     @NotNull
     @Column(name = "status")
@@ -112,11 +123,11 @@ public class Resource {
         this.file = file;
     }
 
-    public String getDuration() {
+    public int getDuration() {
         return duration;
     }
 
-    public void setDuration(String duration) {
+    public void setDuration(int duration) {
         this.duration = duration;
     }
 
@@ -177,22 +188,28 @@ public class Resource {
         this.url_resource = url_resource;
     }
 
-    @Override
-    public String toString() {
-        return "Resource{" +
-                "resource_id=" + resource_id +
-                ", resource_name='" + resource_name + '\'' +
-                ", type='" + type + '\'' +
-                ", thumbnail='" + thumbnail + '\'' +
-                ", file='" + file + '\'' +
-                ", duration='" + duration + '\'' +
-                ", status='" + status + '\'' +
-                ", stretch='" + stretch + '\'' +
-                ", url_resource='" + url_resource + '\'' +
-                ", created_by='" + created_by + '\'' +
-                ", created_date=" + created_date +
-                ", updated_by='" + updated_by + '\'' +
-                ", updated_date=" + updated_date +
-                '}';
+    public int getBranch_id() {
+        return branch_id;
     }
+
+    public void setBranch_id(int branch_id) {
+        this.branch_id = branch_id;
+    }
+
+    public int getRegion_id() {
+        return region_id;
+    }
+
+    public void setRegion_id(int region_id) {
+        this.region_id = region_id;
+    }
+
+    public int getCompany_id() {
+        return company_id;
+    }
+
+    public void setCompany_id(int company_id) {
+        this.company_id = company_id;
+    }
+
 }

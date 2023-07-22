@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "Playlist", schema = "cms")
+@Table(name = "Playlist", schema = "cms_2")
 public class Playlist {
     @Id
     @Column(name = "playlist_id", columnDefinition = "serial")
@@ -34,9 +34,14 @@ public class Playlist {
     @Column(name = "company_id")
     private int company_id;
 
+
     @NotNull
-    @Column(name = "position_id")
-    private int position_id;
+    @Column(name = "profile_id")
+    private int profile_id;
+
+    @NotNull
+    @Column(name = "is_default")
+    private boolean is_default;
 
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Jakarta")
@@ -106,14 +111,6 @@ public class Playlist {
 
     public void setBranch_id(int branch_id) {
         this.branch_id = branch_id;
-    }
-
-    public int getPosition_id() {
-        return position_id;
-    }
-
-    public void setPosition_id(int position_id) {
-        this.position_id = position_id;
     }
 
     public Date getStart_date() {
@@ -188,23 +185,19 @@ public class Playlist {
         this.company_id = company_id;
     }
 
-    @Override
-    public String toString() {
-        return "Playlist{" +
-                "playlist_id=" + playlist_id +
-                ", status='" + status + '\'' +
-                ", playlist_name='" + playlist_name + '\'' +
-                ", branch_id=" + branch_id +
-                ", region_id=" + region_id +
-                ", company_id=" + company_id +
-                ", position_id=" + position_id +
-                ", start_date=" + start_date +
-                ", end_date=" + end_date +
-                ", sort=" + sort +
-                ", created_by='" + created_by + '\'' +
-                ", created_date=" + created_date +
-                ", updated_by='" + updated_by + '\'' +
-                ", updated_date=" + updated_date +
-                '}';
+    public boolean isIs_default() {
+        return is_default;
+    }
+
+    public void setIs_default(boolean is_default) {
+        this.is_default = is_default;
+    }
+
+    public int getProfile_id() {
+        return profile_id;
+    }
+
+    public void setProfile_id(int profile_id) {
+        this.profile_id = profile_id;
     }
 }

@@ -47,4 +47,16 @@ public class PlaylistController {
         logger.info(new Date().getTime() + " : deletePlaylist - " + input);
         return cmsServices.deletePlaylist(input);
     }
+
+    @PostMapping("/getPlaylistAndroid")
+    public BaseResponse getPlaylistAndroid(@RequestBody String input) throws Exception, SQLException, ParseException {
+        logger.info(new Date().getTime() + " : getPlaylistAndroid - " + input);
+        return cmsServices.getPlaylistByProfileIdAndroid(input);
+    }
+
+//    @PostMapping("/getPlaylistDesktop")
+//    public BaseResponse getPlaylistDesktop(@RequestBody String input) throws Exception, SQLException, ParseException {
+//        logger.info(new Date().getTime() + " : getPlaylistDesktop - " + input);
+//        return cmsServices.getPlaylistByProfileIDesktop(input);
+//    }
 }

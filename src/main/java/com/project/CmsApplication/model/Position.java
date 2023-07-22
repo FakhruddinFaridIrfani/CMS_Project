@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "Position", schema = "cms")
+@Table(name = "Position", schema = "cms_2")
 public class Position {
     @Id
     @Column(name = "position_id", columnDefinition = "serial")
@@ -21,8 +21,8 @@ public class Position {
     private String status;
 
     @NotNull
-    @Column(name = "device_id")
-    private int device_id;
+    @Column(name = "profile_id")
+    private int profile_id;
 
 
     @NotNull
@@ -88,12 +88,12 @@ public class Position {
         this.status = status;
     }
 
-    public int getDevice_id() {
-        return device_id;
+    public int getProfile_id() {
+        return profile_id;
     }
 
-    public void setDevice_id(int device_id) {
-        this.device_id = device_id;
+    public void setProfile_id(int profile_id) {
+        this.profile_id = profile_id;
     }
 
     public String getBox() {

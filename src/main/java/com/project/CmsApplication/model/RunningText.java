@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "running_text", schema = "cms")
+@Table(name = "running_text", schema = "cms_2")
 public class RunningText {
     @Id
     @Column(name = "running_text_id", columnDefinition = "serial")

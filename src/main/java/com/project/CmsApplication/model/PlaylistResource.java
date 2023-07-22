@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "playlist_resource", schema = "cms")
+@Table(name = "playlist_resource", schema = "cms_2")
 public class PlaylistResource {
     @Id
     @Column(name = "playlist_resource_id", columnDefinition = "serial")
@@ -25,11 +25,15 @@ public class PlaylistResource {
     private int playlist_id;
 
     @NotNull
+    @Column(name = "position_id")
+    private int position_id;
+
+    @NotNull
     @Column(name = "resource_id")
     private int resource_id;
 
     @NotNull
-    @Column(name = "order")
+    @Column(name = "resource_order")
     private int order;
 
 
@@ -123,5 +127,13 @@ public class PlaylistResource {
 
     public void setUpdated_date(Date updated_date) {
         this.updated_date = updated_date;
+    }
+
+    public int getPosition_id() {
+        return position_id;
+    }
+
+    public void setPosition_id(int position_id) {
+        this.position_id = position_id;
     }
 }

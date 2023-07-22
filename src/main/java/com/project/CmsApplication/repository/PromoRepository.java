@@ -14,7 +14,7 @@ import java.util.List;
 @Transactional
 public interface PromoRepository extends JpaRepository<Promo, Integer> {
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE " +
+    @Query(value = "SELECT * from cms_2.Promo WHERE " +
             "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
             "lower(tittle) like lower(:tittle) AND " +
             "file like :file AND " +
@@ -47,7 +47,7 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
             @Param("updated_date") String updated_at);
 
     @Modifying
-    @Query(value = "INSERT INTO cms.Promo(status,branch_id,region_id,company_id,tittle,file,description,popup,popup_description,start_date,end_date,created_by,created_date,updated_by,updated_date,thumbnail) " +
+    @Query(value = "INSERT INTO cms_2.Promo(status,branch_id,region_id,company_id,tittle,file,description,popup,popup_description,start_date,end_date,created_by,created_date,updated_by,updated_date,thumbnail) " +
             "VALUES('active',:branch_id,:region_id,:company_id,:tittle,:file,:description,:popup,:popup_description,CAST(:start_date AS timestamp),CAST(:end_date AS timestamp),:created_by,current_timestamp,:created_by,current_timestamp,:thumbnail)", nativeQuery = true)
     void save(@Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id,
               @Param("tittle") String tittle,
@@ -56,21 +56,21 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
               @Param("start_date") String start_date, @Param("end_date") String end_date,
               @Param("created_by") String created_by, @Param("thumbnail") String thumbnail);
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE promo_id =:promo_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Promo WHERE promo_id =:promo_id", nativeQuery = true)
     List<Promo> getPromoById(@Param("promo_id") int promo_id);
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Promo WHERE branch_id =:branch_id AND status not in ('deleted')", nativeQuery = true)
     List<Promo> getPromoByBranchId(@Param("branch_id") int branch_id);
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE lower(tittle) =lower(:tittle) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id =:company_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Promo WHERE lower(tittle) =lower(:tittle) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id =:company_id", nativeQuery = true)
     List<Promo> getPromoByTittle(@Param("tittle") String tittle, @Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id);
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE lower(tittle) =lower(:tittle) AND promo_id not in (:promo_id) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id =:company_id", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Promo WHERE lower(tittle) =lower(:tittle) AND promo_id not in (:promo_id) AND status not in ('deleted') AND branch_id =:branch_id AND region_id=:region_id AND company_id =:company_id", nativeQuery = true)
     List<Promo> getPromoByTittleExceptId(@Param("tittle") String tittle, @Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id, @Param("promo_id") int promo_id);
 
 
     @Modifying
-    @Query(value = "UPDATE cms.Promo SET branch_id=:branch_id,region_id=:region_id,company_id=:company_id,tittle=:tittle,file=:file,description=:description,popup=:popup,popup_description=:popup_description," +
+    @Query(value = "UPDATE cms_2.Promo SET branch_id=:branch_id,region_id=:region_id,company_id=:company_id,tittle=:tittle,file=:file,description=:description,popup=:popup,popup_description=:popup_description," +
             "start_date=CAST(:start_date AS timestamp),end_date =CAST(:end_date AS timestamp) ,status=:status," +
             "updated_by=:updated_by,updated_date=current_timestamp, thumbnail =:thumbnail WHERE promo_id =:promo_id ", nativeQuery = true)
     void updatePromo(@Param("branch_id") int branch_id, @Param("region_id") int region_id, @Param("company_id") int company_id,
@@ -81,11 +81,11 @@ public interface PromoRepository extends JpaRepository<Promo, Integer> {
                      @Param("updated_by") String updated_by, @Param("promo_id") int promo_id, @Param("thumbnail") String thumbnail);
 
     @Modifying
-    @Query(value = "UPDATE cms.Promo SET status = 'deleted',updated_by=:updated_by," +
+    @Query(value = "UPDATE cms_2.Promo SET status = 'deleted',updated_by=:updated_by," +
             "updated_date=current_timestamp WHERE promo_id=:promo_id", nativeQuery = true)
     void deletePromo(@Param("promo_id") int promo_id, @Param("updated_by") String updated_by);
 
-    @Query(value = "SELECT * FROM cms.Promo WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
+    @Query(value = "SELECT * from cms_2.Promo WHERE end_date < current_timestamp AND status = 'active'", nativeQuery = true)
     List<Promo> getExpiredPromoId();
 
 

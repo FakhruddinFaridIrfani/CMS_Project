@@ -43,7 +43,7 @@ public class PlaylistResourceController {
         JSONArray playlistResourceItem = jsonInput.getJSONArray("data");
         for (int i = 0; i < playlistResourceItem.length(); i++) {
             JSONObject obj = playlistResourceItem.getJSONObject(i);
-            response = cmsServices.addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), jsonInput.getInt("playlist_id"), obj.getInt("order"));
+            response = cmsServices.addPlaylistResource(jsonInput.optString("user_token"), obj.getInt("resource_id"), jsonInput.getInt("playlist_id"), obj.getInt("order"), obj.getInt("position_id"));
         }
 
 
