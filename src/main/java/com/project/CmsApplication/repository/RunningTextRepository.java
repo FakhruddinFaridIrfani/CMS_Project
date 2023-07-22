@@ -44,8 +44,8 @@ public interface RunningTextRepository extends JpaRepository<RunningText, Intege
 
     @Query(value = "SELECT * from cms_2.running_text WHERE " +
             "CAST(company_id AS VARCHAR) like :company_id AND ((CAST(branch_id AS VARCHAR) like :branch_id AND CAST(region_id AS VARCHAR) like :region_id) OR region_id = 0 OR branch_id=0) AND " +
-            "status not in('deleted') ORDER BY created_date DESC LIMIT 1", nativeQuery = true)
-    RunningText getRunningTextAndroid(@Param("branch_id") String branch_id,
+            "status not in ('deleted','inactive') AND CURRENT_TIMESTAMP BETWEEN start_date and end_date  ORDER BY updated_date DESC", nativeQuery = true)
+    List<RunningText> getRunningTextAndroid(@Param("branch_id") String branch_id,
                                       @Param("region_id") String region_id,
                                       @Param("company_id") String company_id);
 

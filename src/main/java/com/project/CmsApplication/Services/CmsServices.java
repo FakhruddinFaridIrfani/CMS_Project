@@ -4584,7 +4584,7 @@ public class CmsServices {
             }
 
 
-            RunningText getRunningTextResult = runningTextRepository.getRunningTextAndroid(branch_id, region_id, company_id);
+            List<RunningText>  getRunningTextResult = runningTextRepository.getRunningTextAndroid(branch_id, region_id, company_id);
 
 
             response.setData(getRunningTextResult);

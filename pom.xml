@@ -21,7 +21,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<spring.profiles.active>adidata</spring.profiles.active>
+		<spring.profiles.active>uat</spring.profiles.active>
 		<java.version>1.8</java.version>
 	</properties>
 
